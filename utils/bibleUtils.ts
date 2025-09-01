@@ -162,7 +162,9 @@ export function getAllBookNames(): { hindi: string; english: string }[] {
 }
 
 /**
- * Converts a Bible book name to a URL-friendly slug
+ * Converts a Bible book name to a URL-friendly slug (legacy function)
+ * Note: This function is kept for backward compatibility.
+ * For URL generation, use createVerseUrl() which handles proper URL encoding.
  */
 export function normalizeBookName(bookName: string): string {
   const trimmedName = bookName.trim();
@@ -189,16 +191,16 @@ export function createVerseUrl(reference: string, version?: string): string {
   
   if (match) {
     const [, book, chapter, verse] = match;
-    const bookSlug = normalizeBookName(book);
+    
+    // Convert Hindi book name to English if needed, maintain proper case
+    const englishBookName = getEnglishBookName(book.trim()) || book.trim();
+    
     const params = new URLSearchParams({
-      book: bookSlug,
+      book: englishBookName,
       chapter,
+      version: version || 'ESV',
       verse
     });
-    
-    if (version) {
-      params.append('version', version);
-    }
     
     return `/read?${params.toString()}`;
   }
@@ -208,15 +210,15 @@ export function createVerseUrl(reference: string, version?: string): string {
   const chapterMatch = reference.match(chapterRegex);
   if (chapterMatch) {
     const [, book, chapter] = chapterMatch;
-    const bookSlug = normalizeBookName(book);
-    const params = new URLSearchParams({
-      book: bookSlug,
-      chapter
-    });
     
-    if (version) {
-      params.append('version', version);
-    }
+    // Convert Hindi book name to English if needed, maintain proper case
+    const englishBookName = getEnglishBookName(book.trim()) || book.trim();
+    
+    const params = new URLSearchParams({
+      book: englishBookName,
+      chapter,
+      version: version || 'ESV'
+    });
     
     return `/read?${params.toString()}`;
   }

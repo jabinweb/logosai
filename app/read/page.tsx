@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   ReadHeader, 
@@ -87,11 +87,9 @@ function ReadBibleContent() {
 
   // Helper function to normalize book names
   const normalizeBookName = useCallback((bookName: string): string | null => {
-    const normalizedInput = bookName.toLowerCase().trim();
-    
-    // First, convert URL-friendly format back to proper format
-    // e.g., "1-corinthians" -> "1 corinthians"
-    const spacedInput = normalizedInput.replace(/-/g, ' ');
+    // Decode URL-encoded book name but preserve case for initial matching
+    const decodedInput = decodeURIComponent(bookName).trim();
+    const lowerInput = decodedInput.toLowerCase();
     
     // If we have books data loaded, use it for normalization
     if (booksData.length > 0) {
@@ -99,42 +97,35 @@ function ReadBibleContent() {
       if (selectedVersion === 'IBP') {
         // Check if input matches a Hindi name (exact match)
         const hindiBookMatch = booksData.find(book => 
-          book.book_hindi.toLowerCase() === normalizedInput ||
-          book.book_hindi.toLowerCase() === spacedInput
+          book.book_hindi.toLowerCase() === lowerInput
         );
         if (hindiBookMatch) return hindiBookMatch.book_english;
         
         // Check partial match in Hindi names
         const hindiPartialMatch = booksData.find(book => 
-          book.book_hindi.toLowerCase().includes(normalizedInput) ||
-          book.book_hindi.toLowerCase().includes(spacedInput) ||
-          normalizedInput.includes(book.book_hindi.toLowerCase()) ||
-          spacedInput.includes(book.book_hindi.toLowerCase())
+          book.book_hindi.toLowerCase().includes(lowerInput) ||
+          lowerInput.includes(book.book_hindi.toLowerCase())
         );
         if (hindiPartialMatch) return hindiPartialMatch.book_english;
       }
       
-      // Check English names (exact match) - try both hyphenated and spaced versions
+      // Check English names (exact match - case insensitive)
       const exactEnglishMatch = booksData.find(book => 
-        book.book_english.toLowerCase() === normalizedInput ||
-        book.book_english.toLowerCase() === spacedInput
+        book.book_english.toLowerCase() === lowerInput
       );
       if (exactEnglishMatch) return exactEnglishMatch.book_english;
       
       // Check partial match in English names
       const partialEnglishMatch = booksData.find(book => 
-        book.book_english.toLowerCase().includes(normalizedInput) ||
-        book.book_english.toLowerCase().includes(spacedInput) ||
-        normalizedInput.includes(book.book_english.toLowerCase()) ||
-        spacedInput.includes(book.book_english.toLowerCase())
+        book.book_english.toLowerCase().includes(lowerInput) ||
+        lowerInput.includes(book.book_english.toLowerCase())
       );
       if (partialEnglishMatch) return partialEnglishMatch.book_english;
       
       // Check abbreviations from books.json
       const abbreviationMatch = booksData.find(book => 
         book.abbreviations && book.abbreviations.some(abbr => 
-          abbr.toLowerCase() === normalizedInput ||
-          abbr.toLowerCase() === spacedInput
+          abbr.toLowerCase() === lowerInput
         )
       );
       if (abbreviationMatch) return abbreviationMatch.book_english;
@@ -142,28 +133,22 @@ function ReadBibleContent() {
     
     // Fallback: If we have Bible data loaded, check against actual book names
     if (books.length > 0) {
-      // Try exact match (case insensitive) - try both formats
+      // Try exact match (case insensitive)
       const exactMatch = books.find(book => 
-        book.toLowerCase() === normalizedInput ||
-        book.toLowerCase() === spacedInput
+        book.toLowerCase() === lowerInput
       );
       if (exactMatch) return exactMatch;
       
       // Try partial match
       const partialMatch = books.find(book => 
-        book.toLowerCase().includes(normalizedInput) || 
-        book.toLowerCase().includes(spacedInput) ||
-        normalizedInput.includes(book.toLowerCase()) ||
-        spacedInput.includes(book.toLowerCase())
+        book.toLowerCase().includes(lowerInput) ||
+        lowerInput.includes(book.toLowerCase())
       );
       if (partialMatch) return partialMatch;
     }
     
-    // Default case: convert to proper format with spaces and proper casing
-    return spacedInput
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    // Default case: return the input with proper casing if no match found
+    return decodedInput;
   }, [books, booksData, selectedVersion]);
 
   // Function to update URL with current state
@@ -247,16 +232,22 @@ function ReadBibleContent() {
     }
   };
 
-  // Handle URL query parameters on component mount
+  // Handle URL query parameters - run after versions are loaded
   useEffect(() => {
+    // Only run if bibleVersions are loaded
+    if (bibleVersions.length === 0) return;
+    
     const urlBook = searchParams.get('book');
     const urlChapter = searchParams.get('chapter');
     const urlVerse = searchParams.get('verse');
     const urlVersion = searchParams.get('version');
 
+    console.log('Processing URL params:', { urlBook, urlChapter, urlVerse, urlVersion });
+
     // Set version from URL if provided and valid
     if (urlVersion && bibleVersions.some(v => v.id === urlVersion)) {
       setSelectedVersion(urlVersion);
+      console.log('Set version from URL:', urlVersion);
     }
 
     // Set book from URL if provided
@@ -265,21 +256,24 @@ function ReadBibleContent() {
       const normalizedBook = normalizeBookName(urlBook);
       if (normalizedBook) {
         setSelectedBook(normalizedBook);
+        console.log('Set book from URL:', normalizedBook);
       }
     }
 
     // Set chapter from URL if provided
     if (urlChapter && !isNaN(parseInt(urlChapter))) {
       setSelectedChapter(urlChapter);
+      console.log('Set chapter from URL:', urlChapter);
     }
 
     // Set verse to highlight from URL if provided
     if (urlVerse && !isNaN(parseInt(urlVerse))) {
       setHighlightedVerse(urlVerse);
+      console.log('Set highlighted verse from URL:', urlVerse);
     } else {
       setHighlightedVerse(null);
     }
-  }, [searchParams, normalizeBookName, bibleVersions]);
+  }, [searchParams, bibleVersions, normalizeBookName]);
 
   // Load Bible versions
   useEffect(() => {
@@ -361,6 +355,8 @@ function ReadBibleContent() {
     const loadBibleData = async () => {
       try {
         setIsLoading(true);
+        console.log(`🔄 Loading ${selectedVersion} Bible data...`);
+        
         const response = await fetch(`/bibles/${selectedVersion}_bible.json`);
         
         if (!response.ok) {
@@ -374,8 +370,9 @@ function ReadBibleContent() {
         const bookList = Object.keys(data);
         setBooks(bookList);
         
-        // Set default book if current selection doesn't exist
+        // Set default book if current selection doesn't exist in this version
         if (!bookList.includes(selectedBook)) {
+          console.log(`📖 Book "${selectedBook}" not found in ${selectedVersion}, setting to ${bookList[0] || 'Genesis'}`);
           setSelectedBook(bookList[0] || 'Genesis');
         }
         
@@ -388,8 +385,22 @@ function ReadBibleContent() {
       }
     };
 
-    loadBibleData();
-  }, [selectedVersion, selectedBook]);
+    // Only load if we have a selected version
+    if (selectedVersion) {
+      loadBibleData();
+    }
+  }, [selectedVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Validate and update book selection when Bible data changes
+  useEffect(() => {
+    if (bibleData && books.length > 0 && selectedBook) {
+      // Check if the current book exists in the loaded Bible data
+      if (!books.includes(selectedBook)) {
+        console.log(`📖 Book "${selectedBook}" not found in loaded Bible data, setting to ${books[0] || 'Genesis'}`);
+        setSelectedBook(books[0] || 'Genesis');
+      }
+    }
+  }, [bibleData, books, selectedBook]);
 
   // Update chapters when book changes
   useEffect(() => {
@@ -481,9 +492,17 @@ function ReadBibleContent() {
     return bibleData[selectedBook][selectedChapter];
   };
 
-  // Search functionality
-  const performSearch = async (query: string) => {
-    if (!query.trim() || !bibleData) return;
+  // Debounced search function for real-time search
+  const debouncedSearchRef = useRef<NodeJS.Timeout | null>(null);
+
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+    
+    if (!bibleData) return;
 
     setIsSearching(true);
     setSearchResults([]);
@@ -534,7 +553,35 @@ function ReadBibleContent() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [bibleData, searchScope, selectedBook]);
+
+  // Debounced search trigger for real-time search
+  const triggerDebouncedSearch = useCallback((query: string) => {
+    // Clear existing timeout
+    if (debouncedSearchRef.current) {
+      clearTimeout(debouncedSearchRef.current);
+    }
+
+    // Set new timeout for search
+    debouncedSearchRef.current = setTimeout(() => {
+      performSearch(query);
+    }, 300); // 300ms delay
+  }, [performSearch]);
+
+  // Custom search query handler with debounced search
+  const handleSearchQueryChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    triggerDebouncedSearch(query);
+  }, [triggerDebouncedSearch]);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debouncedSearchRef.current) {
+        clearTimeout(debouncedSearchRef.current);
+      }
+    };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -561,7 +608,7 @@ function ReadBibleContent() {
         onVersionChange={setSelectedVersion}
         onBookChange={handleBookSelection}
         onChapterChange={setSelectedChapter}
-        onSearchQueryChange={setSearchQuery}
+        onSearchQueryChange={handleSearchQueryChange}
         onSearchScopeChange={setSearchScope}
         onSearchSubmit={handleSearchSubmit}
         onSearchResultsToggle={() => setShowSearchResults(!showSearchResults)}
