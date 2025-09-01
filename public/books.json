@@ -1,0 +1,398 @@
+[
+  {
+    "id": 1,
+    "book_hindi": "उत्पत्ति",
+    "book_english": "Genesis",
+    "abbreviations": ["gen", "ge"]
+  },
+  {
+    "id": 2,
+    "book_hindi": "निर्गमन",
+    "book_english": "Exodus",
+    "abbreviations": ["ex", "exo", "exod"]
+  },
+  {
+    "id": 3,
+    "book_hindi": "लैव्यवस्था",
+    "book_english": "Leviticus",
+    "abbreviations": ["lev", "le"]
+  },
+  {
+    "id": 4,
+    "book_hindi": "गिनती",
+    "book_english": "Numbers",
+    "abbreviations": ["num", "nu"]
+  },
+  {
+    "id": 5,
+    "book_hindi": "व्यवस्थाविवरण",
+    "book_english": "Deuteronomy",
+    "abbreviations": ["deut", "dt"]
+  },
+  {
+    "id": 6,
+    "book_hindi": "यहोशू",
+    "book_english": "Joshua",
+    "abbreviations": ["josh", "jos"]
+  },
+  {
+    "id": 7,
+    "book_hindi": "न्यायियों",
+    "book_english": "Judges",
+    "abbreviations": ["judg", "jdg"]
+  },
+  {
+    "id": 8,
+    "book_hindi": "रूत",
+    "book_english": "Ruth",
+    "abbreviations": ["ru"]
+  },
+  {
+    "id": 9,
+    "book_hindi": "1 शमूएल",
+    "book_english": "1 Samuel",
+    "abbreviations": ["1sam", "1 sam", "1s"]
+  },
+  {
+    "id": 10,
+    "book_hindi": "2 शमूएल",
+    "book_english": "2 Samuel",
+    "abbreviations": ["2sam", "2 sam", "2s"]
+  },
+  {
+    "id": 11,
+    "book_hindi": "1 राजा",
+    "book_english": "1 Kings",
+    "abbreviations": ["1kgs", "1 kgs", "1k"]
+  },
+  {
+    "id": 12,
+    "book_hindi": "2 राजा",
+    "book_english": "2 Kings",
+    "abbreviations": ["2kgs", "2 kgs", "2k"]
+  },
+  {
+    "id": 13,
+    "book_hindi": "1 इतिहास",
+    "book_english": "1 Chronicles",
+    "abbreviations": ["1chr", "1 chr", "1ch"]
+  },
+  {
+    "id": 14,
+    "book_hindi": "2 इतिहास",
+    "book_english": "2 Chronicles",
+    "abbreviations": ["2chr", "2 chr", "2ch"]
+  },
+  {
+    "id": 15,
+    "book_hindi": "एज्रा",
+    "book_english": "Ezra",
+    "abbreviations": ["ezr"]
+  },
+  {
+    "id": 16,
+    "book_hindi": "नहेमायाह",
+    "book_english": "Nehemiah",
+    "abbreviations": ["neh", "ne"]
+  },
+  {
+    "id": 17,
+    "book_hindi": "एस्तेर",
+    "book_english": "Esther",
+    "abbreviations": ["est", "es"]
+  },
+  {
+    "id": 18,
+    "book_hindi": "अय्यूब",
+    "book_english": "Job",
+    "abbreviations": ["job"]
+  },
+  {
+    "id": 19,
+    "book_hindi": "भजन संहिता",
+    "book_english": "Psalms",
+    "abbreviations": ["ps", "psa", "psalm", "psalms"]
+  },
+  {
+    "id": 20,
+    "book_hindi": "नीतिवचन",
+    "book_english": "Proverbs",
+    "abbreviations": ["prov", "pr"]
+  },
+  {
+    "id": 21,
+    "book_hindi": "सभोपदेशक",
+    "book_english": "Ecclesiastes",
+    "abbreviations": ["eccl", "ecc", "ec"]
+  },
+  {
+    "id": 22,
+    "book_hindi": "श्रेष्ठगीत",
+    "book_english": "Song of Solomon",
+    "abbreviations": ["song", "sos", "ss"]
+  },
+  {
+    "id": 23,
+    "book_hindi": "यशायाह",
+    "book_english": "Isaiah",
+    "abbreviations": ["isa", "is"]
+  },
+  {
+    "id": 24,
+    "book_hindi": "यिर्मयाह",
+    "book_english": "Jeremiah",
+    "abbreviations": ["jer", "je"]
+  },
+  {
+    "id": 25,
+    "book_hindi": "विलापगीत",
+    "book_english": "Lamentations",
+    "abbreviations": ["lam", "la"]
+  },
+  {
+    "id": 26,
+    "book_hindi": "यहेजकेल",
+    "book_english": "Ezekiel",
+    "abbreviations": ["ezek", "eze", "ez"]
+  },
+  {
+    "id": 27,
+    "book_hindi": "दानिय्येल",
+    "book_english": "Daniel",
+    "abbreviations": ["dan", "da"]
+  },
+  {
+    "id": 28,
+    "book_hindi": "होशे",
+    "book_english": "Hosea",
+    "abbreviations": ["hos", "ho"]
+  },
+  {
+    "id": 29,
+    "book_hindi": "योएल",
+    "book_english": "Joel",
+    "abbreviations": ["joel", "joe"]
+  },
+  {
+    "id": 30,
+    "book_hindi": "आमोस",
+    "book_english": "Amos",
+    "abbreviations": ["amos", "am"]
+  },
+  {
+    "id": 31,
+    "book_hindi": "ओबद्याह",
+    "book_english": "Obadiah",
+    "abbreviations": ["obad", "ob"]
+  },
+  {
+    "id": 32,
+    "book_hindi": "योना",
+    "book_english": "Jonah",
+    "abbreviations": ["jonah", "jon"]
+  },
+  {
+    "id": 33,
+    "book_hindi": "मीका",
+    "book_english": "Micah",
+    "abbreviations": ["mic", "mi"]
+  },
+  {
+    "id": 34,
+    "book_hindi": "नहूम",
+    "book_english": "Nahum",
+    "abbreviations": ["nah", "na"]
+  },
+  {
+    "id": 35,
+    "book_hindi": "हबक्कूक",
+    "book_english": "Habakkuk",
+    "abbreviations": ["hab", "hb"]
+  },
+  {
+    "id": 36,
+    "book_hindi": "सपन्याह",
+    "book_english": "Zephaniah",
+    "abbreviations": ["zeph", "zep"]
+  },
+  {
+    "id": 37,
+    "book_hindi": "हाग्गै",
+    "book_english": "Haggai",
+    "abbreviations": ["hag", "hg"]
+  },
+  {
+    "id": 38,
+    "book_hindi": "जकर्याह",
+    "book_english": "Zechariah",
+    "abbreviations": ["zech", "zec"]
+  },
+  {
+    "id": 39,
+    "book_hindi": "मलाकी",
+    "book_english": "Malachi",
+    "abbreviations": ["mal", "ml"]
+  },
+  {
+    "id": 40,
+    "book_hindi": "मत्ती",
+    "book_english": "Matthew",
+    "abbreviations": ["matt", "mt"]
+  },
+  {
+    "id": 41,
+    "book_hindi": "मरकुस",
+    "book_english": "Mark",
+    "abbreviations": ["mark", "mk"]
+  },
+  {
+    "id": 42,
+    "book_hindi": "लूका",
+    "book_english": "Luke",
+    "abbreviations": ["luke", "lk"]
+  },
+  {
+    "id": 43,
+    "book_hindi": "यूहन्ना",
+    "book_english": "John",
+    "abbreviations": ["john", "jn"]
+  },
+  {
+    "id": 44,
+    "book_hindi": "प्रेरितों के काम",
+    "book_english": "Acts",
+    "abbreviations": ["acts", "ac"]
+  },
+  {
+    "id": 45,
+    "book_hindi": "रोमियों",
+    "book_english": "Romans",
+    "abbreviations": ["rom", "ro"]
+  },
+  {
+    "id": 46,
+    "book_hindi": "1 कुरिन्थियों",
+    "book_english": "1 Corinthians",
+    "abbreviations": ["1cor", "1 cor", "1co"]
+  },
+  {
+    "id": 47,
+    "book_hindi": "2 कुरिन्थियों",
+    "book_english": "2 Corinthians",
+    "abbreviations": ["2cor", "2 cor", "2co"]
+  },
+  {
+    "id": 48,
+    "book_hindi": "गलातियों",
+    "book_english": "Galatians",
+    "abbreviations": ["gal", "ga"]
+  },
+  {
+    "id": 49,
+    "book_hindi": "इफिसियों",
+    "book_english": "Ephesians",
+    "abbreviations": ["eph", "ep"]
+  },
+  {
+    "id": 50,
+    "book_hindi": "फिलिप्पियों",
+    "book_english": "Philippians",
+    "abbreviations": ["phil", "php"]
+  },
+  {
+    "id": 51,
+    "book_hindi": "कुलुस्सियों",
+    "book_english": "Colossians",
+    "abbreviations": ["col", "co"]
+  },
+  {
+    "id": 52,
+    "book_hindi": "1 थिस्सलुनीकियों",
+    "book_english": "1 Thessalonians",
+    "abbreviations": ["1thess", "1 thess", "1th"]
+  },
+  {
+    "id": 53,
+    "book_hindi": "2 थिस्सलुनीकियों",
+    "book_english": "2 Thessalonians",
+    "abbreviations": ["2thess", "2 thess", "2th"]
+  },
+  {
+    "id": 54,
+    "book_hindi": "1 तीमुथियुस",
+    "book_english": "1 Timothy",
+    "abbreviations": ["1tim", "1 tim", "1ti"]
+  },
+  {
+    "id": 55,
+    "book_hindi": "2 तीमुथियुस",
+    "book_english": "2 Timothy",
+    "abbreviations": ["2tim", "2 tim", "2ti"]
+  },
+  {
+    "id": 56,
+    "book_hindi": "तीतुस",
+    "book_english": "Titus",
+    "abbreviations": ["tit", "ti"]
+  },
+  {
+    "id": 57,
+    "book_hindi": "फिलेमोन",
+    "book_english": "Philemon",
+    "abbreviations": ["philem", "phm"]
+  },
+  {
+    "id": 58,
+    "book_hindi": "इब्रानियों",
+    "book_english": "Hebrews",
+    "abbreviations": ["heb", "he"]
+  },
+  {
+    "id": 59,
+    "book_hindi": "याकूब",
+    "book_english": "James",
+    "abbreviations": ["jas", "ja"]
+  },
+  {
+    "id": 60,
+    "book_hindi": "1 पतरस",
+    "book_english": "1 Peter",
+    "abbreviations": ["1pet", "1 pet", "1pe"]
+  },
+  {
+    "id": 61,
+    "book_hindi": "2 पतरस",
+    "book_english": "2 Peter",
+    "abbreviations": ["2pet", "2 pet", "2pe"]
+  },
+  {
+    "id": 62,
+    "book_hindi": "1 यूहन्ना",
+    "book_english": "1 John",
+    "abbreviations": ["1jn", "1 jn", "1jo"]
+  },
+  {
+    "id": 63,
+    "book_hindi": "2 यूहन्ना",
+    "book_english": "2 John",
+    "abbreviations": ["2jn", "2 jn", "2jo"]
+  },
+  {
+    "id": 64,
+    "book_hindi": "3 यूहन्ना",
+    "book_english": "3 John",
+    "abbreviations": ["3jn", "3 jn", "3jo"]
+  },
+  {
+    "id": 65,
+    "book_hindi": "यहूदा",
+    "book_english": "Jude",
+    "abbreviations": ["jude", "jud"]
+  },
+  {
+    "id": 66,
+    "book_hindi": "प्रकाशितवाक्य",
+    "book_english": "Revelation",
+    "abbreviations": ["rev", "re"]
+  }
+]
