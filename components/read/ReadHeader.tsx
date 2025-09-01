@@ -11,6 +11,13 @@ interface BibleVersion {
   description?: string;
 }
 
+interface BookData {
+  id: number;
+  book_hindi: string;
+  book_english: string;
+  abbreviations: string[];
+}
+
 interface ReadHeaderProps {
   bibleVersions: BibleVersion[];
   selectedVersion: string;
@@ -61,32 +68,37 @@ export default function ReadHeader({
   const [showBookDropdown, setShowBookDropdown] = useState(false);
   const [showChapterDropdown, setShowChapterDropdown] = useState(false);
   const [bookSearchQuery, setBookSearchQuery] = useState('');
+  const [booksData, setBooksData] = useState<BookData[]>([]);
 
   const versionDropdownRef = useRef<HTMLDivElement>(null);
   const bookDropdownRef = useRef<HTMLDivElement>(null);
   const chapterDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Basic Bible books list for dropdown
-  const basicBooks = [
-    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
-    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
-    '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
-    'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
-    'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations',
-    'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
-    'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
-    'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
-    'Matthew', 'Mark', 'Luke', 'John', 'Acts',
-    'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
-    'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy',
-    '2 Timothy', 'Titus', 'Philemon', 'Hebrews', 'James',
-    '1 Peter', '2 Peter', '1 John', '2 John', '3 John',
-    'Jude', 'Revelation'
-  ];
+  // Load books data from JSON
+  useEffect(() => {
+    fetch('/books.json')
+      .then(response => response.json())
+      .then((data: BookData[]) => setBooksData(data))
+      .catch(error => console.error('Failed to load books:', error));
+  }, []);
+
+  // Get books based on selected Bible version
+  const getBooks = () => {
+    if (booksData.length === 0) return [];
+    
+    // For Hindi/IBP Bible, return Hindi names
+    if (selectedVersion === 'IBP') {
+      return booksData.map(book => book.book_hindi);
+    }
+    
+    // For English versions, return English names
+    return booksData.map(book => book.book_english);
+  };
 
   const getFilteredBooks = () => {
-    if (!bookSearchQuery) return basicBooks;
-    return basicBooks.filter(book =>
+    const books = getBooks();
+    if (!bookSearchQuery) return books;
+    return books.filter(book =>
       book.toLowerCase().includes(bookSearchQuery.toLowerCase())
     );
   };

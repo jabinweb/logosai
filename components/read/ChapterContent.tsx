@@ -393,7 +393,7 @@ export default function ChapterContent({
           <div 
             key={verse} 
             id={`verse-${verse}`} 
-            className="group"
+            className="group select-none"
           >
             <div className="flex items-start space-x-3 sm:space-x-6">
               <div className="relative">
