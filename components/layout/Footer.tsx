@@ -30,58 +30,61 @@ export default function Footer({ className = '' }: FooterProps) {
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/read" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Read Bible
-                </Link>
-              </li>
-              <li>
-                <Link href="/history" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Search History
-                </Link>
-              </li>
-              <li>
-                <Link href="/bookmarks" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Bookmarks
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Mobile: 2-column layout for menu sections */}
+          <div className="grid grid-cols-2 gap-8 md:contents">
+            {/* Quick Links */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Quick Links</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/read" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Read Bible
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/history" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Search History
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/bookmarks" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Bookmarks
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
-          {/* Resources */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Resources</h3>
-            <ul className="space-y-2">
-              <li>
-                <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  About
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Help
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  Terms of Service
-                </a>
-              </li>
-            </ul>
+            {/* Resources */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Resources</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Help
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -93,7 +96,7 @@ export default function Footer({ className = '' }: FooterProps) {
             </p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                Powered by Google LogosAI
+                Powered by <Link href="https://web.jabin.org">Jabin Web</Link>
               </span>
             </div>
           </div>
