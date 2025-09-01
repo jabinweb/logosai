@@ -249,4 +249,29 @@ export class BookmarkService {
       return false
     }
   }
+
+  // Check if multiple verses are bookmarked (batch operation)
+  static async areVersesBookmarked(
+    userId: string,
+    references: string[],
+    version: string
+  ): Promise<string[]> {
+    try {
+      const bookmarks = await prisma.bookmark.findMany({
+        where: {
+          userId,
+          reference: {
+            in: references
+          },
+          version,
+        },
+        select: { reference: true }
+      })
+
+      return bookmarks.map(bookmark => bookmark.reference)
+    } catch (error) {
+      console.error('Error checking if verses are bookmarked:', error)
+      return []
+    }
+  }
 }

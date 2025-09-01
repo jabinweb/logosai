@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import AudioPlayer from './AudioPlayer';
+import EditVerseModal from '@/components/admin/EditVerseModal';
 
 interface BibleVersion {
   id: string;
@@ -25,6 +26,7 @@ interface ChapterContentProps {
   lineHeight: 'compact' | 'normal' | 'relaxed' | 'loose';
   showMobileSearch: boolean;
   updateURL: (book?: string, chapter?: string, verse?: string, version?: string) => void;
+  onVerseUpdate?: (book: string, chapter: string, verse: string, newText: string) => void;
   onTouchStart: (e: React.TouchEvent) => void;
   onTouchMove: (e: React.TouchEvent) => void;
   onTouchEnd: () => void;
@@ -44,6 +46,7 @@ export default function ChapterContent({
   lineHeight,
   showMobileSearch,
   updateURL,
+  onVerseUpdate,
   onTouchStart,
   onTouchMove,
   onTouchEnd
@@ -56,8 +59,43 @@ export default function ChapterContent({
   const [bookmarkedVerses, setBookmarkedVerses] = useState<Set<string>>(new Set());
   const [bookmarkLoading, setBookmarkLoading] = useState<Set<string>>(new Set());
   
+  // Admin edit modal states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  
   const { data: session } = useSession();
   const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  // Check if user is admin or moderator
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (!session?.user?.email) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/user/role', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const { role } = await response.json();
+          setIsAdmin(role === 'admin' || role === 'moderator');
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkUserRole();
+  }, [session]);
 
   // Close context menu when clicking outside
   useEffect(() => {
@@ -78,25 +116,42 @@ export default function ChapterContent({
     const checkBookmarkStatus = async () => {
       if (!session?.user?.id || !chapterText) return;
 
-      const bookmarkedSet = new Set<string>();
-      
-      // Check each verse
-      for (const verse of Object.keys(chapterText)) {
-        const reference = `${displayBookName} ${selectedChapter}:${verse}`;
-        try {
-          const response = await fetch(`/api/bookmarks/check?reference=${encodeURIComponent(reference)}&version=${selectedVersion}`);
-          if (response.ok) {
-            const { isBookmarked } = await response.json();
-            if (isBookmarked) {
-              bookmarkedSet.add(verse);
+      try {
+        // Prepare all references for the current chapter
+        const references = Object.keys(chapterText).map(verse => 
+          `${displayBookName} ${selectedChapter}:${verse}`
+        );
+
+        // Make a single batch API call
+        const response = await fetch('/api/bookmarks/check-batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            references,
+            version: selectedVersion
+          })
+        });
+
+        if (response.ok) {
+          const { bookmarkedReferences } = await response.json();
+          
+          // Convert bookmarked references back to verse numbers
+          const bookmarkedSet = new Set<string>();
+          bookmarkedReferences.forEach((ref: string) => {
+            // Extract verse number from reference like "Genesis 1:1"
+            const verseMatch = ref.match(/:(\d+)$/);
+            if (verseMatch) {
+              bookmarkedSet.add(verseMatch[1]);
             }
-          }
-        } catch (error) {
-          console.error('Failed to check bookmark status:', error);
+          });
+          
+          setBookmarkedVerses(bookmarkedSet);
         }
+      } catch (error) {
+        console.error('Failed to check bookmark status:', error);
       }
-      
-      setBookmarkedVerses(bookmarkedSet);
     };
 
     checkBookmarkStatus();
@@ -262,6 +317,49 @@ export default function ChapterContent({
     console.log(`Highlighted: ${displayBookName} ${selectedChapter}:${selectedVerse?.number}`);
     alert(`Highlighted: ${displayBookName} ${selectedChapter}:${selectedVerse?.number}`);
     setShowVerseActions(false);
+  };
+
+  const handleEdit = () => {
+    if (!isAdmin || !selectedVerse) return;
+    setShowVerseActions(false);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (newText: string) => {
+    if (!selectedVerse) return;
+
+    try {
+      const response = await fetch('/api/admin/update-verse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          book: selectedBook,
+          chapter: selectedChapter,
+          verse: selectedVerse.number,
+          version: selectedVersion,
+          newText
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update verse');
+      }
+
+      // Update the UI without refreshing the page
+      if (onVerseUpdate) {
+        onVerseUpdate(selectedBook, selectedChapter, selectedVerse.number, newText);
+      }
+
+      // Close the edit modal
+      setShowEditModal(false);
+      setSelectedVerse(null);
+    } catch (error) {
+      console.error('Error updating verse:', error);
+      throw error;
+    }
   };
 
   const getFontSizeClasses = (size: string) => {
@@ -520,7 +618,39 @@ export default function ChapterContent({
             </svg>
             <span>Share</span>
           </button>
+
+          {/* Admin Edit Button */}
+          {isAdmin && (
+            <>
+              <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+              
+              <button
+                onClick={handleEdit}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Edit Verse</span>
+              </button>
+            </>
+          )}
         </div>
+      )}
+
+      {/* Edit Verse Modal */}
+      {showEditModal && selectedVerse && (
+        <EditVerseModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          verse={selectedVerse}
+          reference={{
+            book: selectedBook,
+            chapter: selectedChapter,
+            version: selectedVersion
+          }}
+          onSave={handleSaveEdit}
+        />
       )}
     </div>
   );

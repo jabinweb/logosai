@@ -492,6 +492,26 @@ function ReadBibleContent() {
     return bibleData[selectedBook][selectedChapter];
   };
 
+  // Callback function to update verse text without page refresh
+  const handleVerseUpdate = useCallback((book: string, chapter: string, verse: string, newText: string) => {
+    setBibleData(prevData => {
+      if (!prevData || !prevData[book] || !prevData[book][chapter]) {
+        return prevData;
+      }
+
+      return {
+        ...prevData,
+        [book]: {
+          ...prevData[book],
+          [chapter]: {
+            ...prevData[book][chapter],
+            [verse]: newText
+          }
+        }
+      };
+    });
+  }, []);
+
   // Debounced search function for real-time search
   const debouncedSearchRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -691,6 +711,7 @@ function ReadBibleContent() {
             lineHeight={lineHeight}
             showMobileSearch={showMobileSearch}
             updateURL={updateURL}
+            onVerseUpdate={handleVerseUpdate}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
