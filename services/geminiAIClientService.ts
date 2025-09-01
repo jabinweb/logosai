@@ -49,19 +49,33 @@ export class GeminiAIClientService {
   }
 
   async detectLanguage(text: string): Promise<'hindi' | 'english' | 'hinglish'> {
-    // Simple language detection
+    // Enhanced language detection - avoid Hinglish, prefer Hindi or English
     const hindiPattern = /[\u0900-\u097F]/;
     const englishPattern = /[a-zA-Z]/;
+    
+    // Common Hindi words in Roman script
+    const hindiWordsInRoman = [
+      /\b(bhagwan|ishwar|prabhu|yesu|yeshu|masih|dharma|karma|seva|bhakti|moksha|swarg|narak|punya|paap|mandir|gurudwara|gita|ramayana|mahabharata|guru|pandit|prayer|prarthana|puja|aarti|bhajan|kirtan|satsang|darshan|tilak|prasad|langar|vrat|tyohar|diwali|holi|navratri)\b/gi,
+      /\b(kya|hai|hain|ka|ki|ke|me|main|aur|ya|toh|to|jo|ji|bhi|nahi|nahin|hum|tum|aap|uska|uski|iske|iska|woh|yeh|ye|kaise|kyun|kyu|kab|kahan|kon|kaun|kuch|sab|sabko|sabse|mere|mera|meri|tera|teri|tumhara|tumhari|apna|apni|apne)\b/gi
+    ];
     
     const hasHindi = hindiPattern.test(text);
     const hasEnglish = englishPattern.test(text);
     
-    if (hasHindi && hasEnglish) {
-      return 'hinglish';
-    } else if (hasHindi) {
+    // Check for Hindi words in Roman script
+    const hasHindiWordsInRoman = hindiWordsInRoman.some(pattern => pattern.test(text));
+    
+    // If actual Hindi script is present, always prefer Hindi
+    if (hasHindi) {
       return 'hindi';
-    } else {
-      return 'english';
     }
+    
+    // If Roman script has significant Hindi words, treat as Hindi
+    if (hasHindiWordsInRoman && hasEnglish) {
+      return 'hindi'; // Changed from 'hinglish' to 'hindi'
+    }
+    
+    // Default to English
+    return 'english';
   }
 }

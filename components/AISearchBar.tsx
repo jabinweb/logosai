@@ -38,7 +38,13 @@ export default function AISearchBar({
     'पाप की क्षमा कैसे मिलती है?', // How to get forgiveness of sins?
     'What does the Bible say about hope?',
     'Christmas का क्या significance है?', // What is the significance of Christmas?
-    'How to have peace in difficult times?'
+    'How to have peace in difficult times?',
+    'भगवान का प्रेम क्या है?', // What is God's love? (Hindi)
+    'विश्वास और कर्म का क्या संबंध है?', // What's the connection between faith and works? (Hindi)
+    'यीशु कौन है?', // Who is Jesus? (Hindi)
+    'प्रार्थना कैसे करते हैं?', // How to pray? (Hindi)
+    'मुक्ति क्या है और कैसे मिलती है?', // What is salvation and how to get it? (Hindi)
+    'What does the Bible say about forgiveness?', // English
   ];
 
   return (

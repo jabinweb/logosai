@@ -11,7 +11,7 @@ interface AISearchResultsProps {
   result: GeminiResponse;
   isLoading?: boolean;
   error?: string;
-  onVerseClick?: (reference: string) => void;
+  onVerseClick?: (verse: { reference: string; version: string }) => void;
 }
 
 export default function AISearchResults({
@@ -119,9 +119,15 @@ export default function AISearchResults({
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white">AI Answer</h3>
         </div>
         <div className="prose dark:prose-invert max-w-none">
-          <p className={`text-gray-700 dark:text-gray-300 leading-relaxed text-lg ${getFontClassForText(result.answer)}`}>
-            {result.answer}
-          </p>
+          <div className={`text-gray-700 dark:text-gray-300 leading-relaxed text-lg ${getFontClassForText(result.answer)} bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border-l-4 border-blue-500`}>
+            {result.answer.split('\n').map((paragraph, index) => (
+              paragraph.trim() && (
+                <p key={index} className="mb-3 last:mb-0">
+                  {paragraph.trim()}
+                </p>
+              )
+            ))}
+          </div>
         </div>
       </div>
 
@@ -134,24 +140,24 @@ export default function AISearchResults({
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Supporting Bible Verses</h3>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-6">
             {result.bibleVerses.map((verse, index) => (
               <div
                 key={index}
-                className="border-l-4 border-green-500 pl-4 py-3 bg-gray-50 dark:bg-gray-700/50 rounded-r-lg transition-colors"
+                className="border-l-4 border-green-500 pl-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-r-lg transition-all hover:shadow-md"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-green-700 dark:text-green-400">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <span className="font-bold text-green-700 dark:text-green-400 text-lg">
                       {verse.reference}
                     </span>
-                    <span className="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-1 rounded">
+                    <span className="text-sm bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-3 py-1 rounded-full font-medium">
                       {verse.version}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => onVerseClick && onVerseClick(verse.reference)}
+                      onClick={() => onVerseClick && onVerseClick({ reference: verse.reference, version: verse.version })}
                       className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60 rounded text-sm font-medium transition-colors"
                       title="Go to this verse"
                     >
@@ -179,7 +185,7 @@ export default function AISearchResults({
                     )}
                   </div>
                 </div>
-                <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${getFontClassForText(verse.text)}`}>
+                <p className={`text-gray-700 dark:text-gray-300 leading-relaxed text-base ${getFontClassForText(verse.text)} bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm`}>
                   &ldquo;{verse.text}&rdquo;
                 </p>
               </div>
@@ -220,9 +226,15 @@ export default function AISearchResults({
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Detailed Explanation</h3>
           </div>
           <div className="prose dark:prose-invert max-w-none">
-            <p className={`text-gray-700 dark:text-gray-300 leading-relaxed ${getFontClassForText(result.explanation)}`}>
-              {result.explanation}
-            </p>
+            <div className={`text-gray-700 dark:text-gray-300 leading-relaxed ${getFontClassForText(result.explanation)} bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-4 rounded-lg border-l-4 border-orange-500`}>
+              {result.explanation.split(/(?<=\.|।|\?|\!)[\s]*/).map((sentence, index) => (
+                sentence.trim() && (
+                  <p key={index} className="mb-4 last:mb-0 text-justify">
+                    {sentence.trim()}
+                  </p>
+                )
+              ))}
+            </div>
           </div>
         </div>
       )}

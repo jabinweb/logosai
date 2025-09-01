@@ -89,41 +89,52 @@ function ReadBibleContent() {
   const normalizeBookName = useCallback((bookName: string): string | null => {
     const normalizedInput = bookName.toLowerCase().trim();
     
+    // First, convert URL-friendly format back to proper format
+    // e.g., "1-corinthians" -> "1 corinthians"
+    const spacedInput = normalizedInput.replace(/-/g, ' ');
+    
     // If we have books data loaded, use it for normalization
     if (booksData.length > 0) {
       // For IBP version, check Hindi names first
       if (selectedVersion === 'IBP') {
         // Check if input matches a Hindi name (exact match)
         const hindiBookMatch = booksData.find(book => 
-          book.book_hindi.toLowerCase() === normalizedInput
+          book.book_hindi.toLowerCase() === normalizedInput ||
+          book.book_hindi.toLowerCase() === spacedInput
         );
         if (hindiBookMatch) return hindiBookMatch.book_english;
         
         // Check partial match in Hindi names
         const hindiPartialMatch = booksData.find(book => 
           book.book_hindi.toLowerCase().includes(normalizedInput) ||
-          normalizedInput.includes(book.book_hindi.toLowerCase())
+          book.book_hindi.toLowerCase().includes(spacedInput) ||
+          normalizedInput.includes(book.book_hindi.toLowerCase()) ||
+          spacedInput.includes(book.book_hindi.toLowerCase())
         );
         if (hindiPartialMatch) return hindiPartialMatch.book_english;
       }
       
-      // Check English names (exact match)
+      // Check English names (exact match) - try both hyphenated and spaced versions
       const exactEnglishMatch = booksData.find(book => 
-        book.book_english.toLowerCase() === normalizedInput
+        book.book_english.toLowerCase() === normalizedInput ||
+        book.book_english.toLowerCase() === spacedInput
       );
       if (exactEnglishMatch) return exactEnglishMatch.book_english;
       
       // Check partial match in English names
       const partialEnglishMatch = booksData.find(book => 
         book.book_english.toLowerCase().includes(normalizedInput) ||
-        normalizedInput.includes(book.book_english.toLowerCase())
+        book.book_english.toLowerCase().includes(spacedInput) ||
+        normalizedInput.includes(book.book_english.toLowerCase()) ||
+        spacedInput.includes(book.book_english.toLowerCase())
       );
       if (partialEnglishMatch) return partialEnglishMatch.book_english;
       
       // Check abbreviations from books.json
       const abbreviationMatch = booksData.find(book => 
         book.abbreviations && book.abbreviations.some(abbr => 
-          abbr.toLowerCase() === normalizedInput
+          abbr.toLowerCase() === normalizedInput ||
+          abbr.toLowerCase() === spacedInput
         )
       );
       if (abbreviationMatch) return abbreviationMatch.book_english;
@@ -131,20 +142,28 @@ function ReadBibleContent() {
     
     // Fallback: If we have Bible data loaded, check against actual book names
     if (books.length > 0) {
-      // Try exact match (case insensitive)
-      const exactMatch = books.find(book => book.toLowerCase() === normalizedInput);
+      // Try exact match (case insensitive) - try both formats
+      const exactMatch = books.find(book => 
+        book.toLowerCase() === normalizedInput ||
+        book.toLowerCase() === spacedInput
+      );
       if (exactMatch) return exactMatch;
       
       // Try partial match
       const partialMatch = books.find(book => 
         book.toLowerCase().includes(normalizedInput) || 
-        normalizedInput.includes(book.toLowerCase())
+        book.toLowerCase().includes(spacedInput) ||
+        normalizedInput.includes(book.toLowerCase()) ||
+        spacedInput.includes(book.toLowerCase())
       );
       if (partialMatch) return partialMatch;
     }
     
-    // Default case: return the original with proper casing
-    return bookName.charAt(0).toUpperCase() + bookName.slice(1).toLowerCase();
+    // Default case: convert to proper format with spaces and proper casing
+    return spacedInput
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }, [books, booksData, selectedVersion]);
 
   // Function to update URL with current state

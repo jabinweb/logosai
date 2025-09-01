@@ -72,12 +72,111 @@ export const BIBLE_BOOK_MAPPINGS: { [key: string]: string } = {
   'revelation': 'revelation'
 };
 
+// Bible book interface matching books.json structure
+interface BibleBook {
+  id: number;
+  book_hindi: string;
+  book_english: string;
+  abbreviations: string[];
+}
+
+// Cache for loaded books data
+let booksCache: BibleBook[] | null = null;
+
+/**
+ * Load books data asynchronously for client-side usage
+ */
+export async function loadBooksDataAsync(): Promise<BibleBook[]> {
+  if (booksCache) {
+    return booksCache;
+  }
+  
+  if (typeof window !== 'undefined') {
+    try {
+      const response = await fetch('/books.json');
+      if (!response.ok) {
+        throw new Error('Failed to load books.json');
+      }
+      booksCache = await response.json();
+      return booksCache || [];
+    } catch (error) {
+      console.warn('Failed to load books.json:', error);
+      return [];
+    }
+  }
+  
+  return loadBooksDataSync();
+}
+
+/**
+ * Load books data synchronously for server-side usage
+ */
+function loadBooksDataSync(): BibleBook[] {
+  if (typeof window !== 'undefined') {
+    // Client-side: use cached data or return empty array (will be loaded async)
+    return booksCache || [];
+  }
+  
+  try {
+    // Server-side: read file synchronously
+    const fs = eval('require')('fs');
+    const path = eval('require')('path');
+    const filePath = path.join(process.cwd(), 'public', 'books.json');
+    const data = fs.readFileSync(filePath, 'utf8');
+    const books = JSON.parse(data);
+    booksCache = books; // Cache the data
+    return books;
+  } catch (error) {
+    console.warn('Failed to load books.json synchronously:', error);
+    return [];
+  }
+}
+
+/**
+ * Get English book name from Hindi book name using books.json
+ */
+function getEnglishBookName(hindiName: string): string | null {
+  const books = loadBooksDataSync();
+  const book = books.find(b => b.book_hindi === hindiName.trim());
+  return book ? book.book_english : null;
+}
+
+/**
+ * Initialize books cache (call this on app startup for better performance)
+ */
+export function initializeBooksCache(): void {
+  if (typeof window !== 'undefined' && !booksCache) {
+    loadBooksDataAsync().catch(console.warn);
+  }
+}
+
+/**
+ * Get all available book names (for debugging and testing)
+ */
+export function getAllBookNames(): { hindi: string; english: string }[] {
+  const books = loadBooksDataSync();
+  return books.map(book => ({
+    hindi: book.book_hindi,
+    english: book.book_english
+  }));
+}
+
 /**
  * Converts a Bible book name to a URL-friendly slug
  */
 export function normalizeBookName(bookName: string): string {
-  const bookKey = bookName.toLowerCase().trim();
-  return BIBLE_BOOK_MAPPINGS[bookKey] || bookName.toLowerCase().replace(/\s+/g, '-');
+  const trimmedName = bookName.trim();
+  
+  // First check if it's a Hindi book name and convert to English using books.json
+  const englishName = getEnglishBookName(trimmedName);
+  if (englishName) {
+    const englishKey = englishName.toLowerCase();
+    return BIBLE_BOOK_MAPPINGS[englishKey] || englishKey.replace(/\s+/g, '-');
+  }
+  
+  // Then check English mappings
+  const bookKey = trimmedName.toLowerCase();
+  return BIBLE_BOOK_MAPPINGS[bookKey] || bookKey.replace(/\s+/g, '-');
 }
 
 /**
