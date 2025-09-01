@@ -15,8 +15,13 @@ const eczar = Eczar({
 });
 
 export const metadata: Metadata = {
-  title: "Bible AI - Study, Search, and Discover",
-  description: "Your intelligent companion for Bible study, sermon preparation, and spiritual discovery. Search scriptures, explore topics, and find inspiration.",
+  title: "LogosAI - AI-Powered Bible Study & Search",
+  description: "Your intelligent companion for Bible study, sermon preparation, and spiritual discovery. Search scriptures, explore topics, and find inspiration through AI-powered insights.",
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
