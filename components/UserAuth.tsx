@@ -142,9 +142,14 @@ export default function UserAuth() {
   return (
     <button
       onClick={() => signIn()}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 md:px-4 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center"
     >
-      Sign in
+      {/* Mobile: Show icon only */}
+      <svg className="w-4 h-4 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+      </svg>
+      {/* Desktop: Show text */}
+      <span className="hidden md:inline">Sign in</span>
     </button>
   );
 }
