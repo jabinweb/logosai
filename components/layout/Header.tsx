@@ -44,14 +44,17 @@ export default function Header({ className = '' }: HeaderProps) {
             <Link href="/read" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors text-sm lg:text-base">
               Read Bible
             </Link>
-            <Link href="/history" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            {/* <Link href="/history" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
               Search History
             </Link>
             <Link href="/bookmarks" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
               Bookmarks
-            </Link>
-            <Link href="#" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            </Link> */}
+            <Link href="/about" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
               About
+            </Link>
+            <Link href="/help" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+              Help
             </Link>
             <UserAuth />
           </nav>
@@ -104,11 +107,32 @@ export default function Header({ className = '' }: HeaderProps) {
                   Bookmarks
                 </Link>
                 <Link 
-                  href="#" 
+                  href="/about" 
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="block px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
                 >
                   About
+                </Link>
+                <Link 
+                  href="/help" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
+                >
+                  Help
+                </Link>
+                <Link 
+                  href="/privacy" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+                <Link 
+                  href="/terms" 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
+                >
+                  Terms of Service
                 </Link>
               </nav>
             </div>

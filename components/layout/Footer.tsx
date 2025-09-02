@@ -64,24 +64,24 @@ export default function Footer({ className = '' }: FooterProps) {
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Resources</h3>
               <ul className="space-y-2">
                 <li>
-                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <Link href="/about" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                     About
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <Link href="/help" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                     Help
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <Link href="/privacy" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                     Privacy Policy
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <Link href="/terms" className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                     Terms of Service
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -95,6 +95,15 @@ export default function Footer({ className = '' }: FooterProps) {
               &copy; 2025 LogosAI. AI-powered Bible study and search platform.
             </p>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
+              <a 
+                href="mailto:info@jabin.org" 
+                className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              >
+                Contact: info@jabin.org
+              </a>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                |
+              </span>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 Powered by <Link href="https://web.jabin.org">Jabin Web</Link>
               </span>
