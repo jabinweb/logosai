@@ -2,7 +2,6 @@
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { Header, Footer } from '../../../components/layout';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -144,20 +143,13 @@ export default function UserManagement() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
-        <Header />
-        <main className="flex items-center justify-center min-h-[50vh]">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">        <main className="flex items-center justify-center min-h-[50vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-500 border-t-transparent"></div>
-        </main>
-        <Footer />
-      </div>
+        </main>      </div>
     );
   }
 
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 transition-colors duration-300">
+  return (<div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 transition-colors duration-300">
         
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -425,8 +417,5 @@ export default function UserManagement() {
           </div>
 
         </main>
-      </div>
-      <Footer />
-    </>
-  );
+      </div>);
 }

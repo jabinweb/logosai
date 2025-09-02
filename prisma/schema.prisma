@@ -26,6 +26,7 @@ model User {
   sessions      Session[]
   searchHistory SearchHistory[]
   bookmarks     Bookmark[]
+  trainingData  TrainingData[]
 
   @@map("users")
 }
@@ -138,4 +139,74 @@ model BibleVerse {
   @@index([versionId, book, chapter])
   @@index([book])
   @@map("bible_verses")
+}
+
+// AI Training Data model for collecting user feedback and improving responses
+model TrainingData {
+  id                String      @id @default(cuid())
+  query             String      @db.Text  // The user's question
+  response          String      @db.Text  // The AI's response
+  expectedResponse  String?     @db.Text  // What the correct response should be
+  language          String                 // "english", "hindi", "hinglish"
+  category          String?                // "theology", "prayer", "doctrine", "history", "interpretation", "practical"
+  quality           String      @default("good") // "excellent", "good", "poor"
+  userFeedback      String?                // "helpful", "not_helpful", "incorrect"
+  customFeedback    String?     @db.Text  // User's custom feedback text
+  userId            String?                // Optional user ID if logged in
+  sessionId         String?                // Session identifier for anonymous users
+  metadata          Json?                  // Additional metadata (context, verse references, etc.)
+  isValidated       Boolean     @default(false) // Whether this data has been reviewed
+  isUsedForTraining Boolean     @default(false) // Whether this data is used in training
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([language])
+  @@index([category])
+  @@index([quality])
+  @@index([userFeedback])
+  @@index([createdAt])
+  @@map("training_data")
+}
+
+// Model Configuration for AI models
+model ModelConfig {
+  id                     String   @id @default(cuid())
+  modelName             String   @unique      // "gemini-2.0-flash-001", "gpt-4", etc.
+  provider              String                // "gemini", "openai", "claude", "local"
+  apiKey                String?               // Encrypted API key
+  basePrompt            String   @db.Text     // Base system prompt
+  temperature           Float    @default(0.7)
+  maxTokens             Int      @default(2048)
+  systemInstructions    String   @db.Text     // System instructions
+  englishPrompt         String   @db.Text     // English-specific prompt
+  hindiPrompt           String   @db.Text     // Hindi-specific prompt
+  hinglishPrompt        String   @db.Text     // Hinglish-specific prompt
+  isActive              Boolean  @default(false)
+  trainingDataCount     Int      @default(0)
+  lastTrainedAt         DateTime?
+  performanceMetrics    Json?                 // Store accuracy, consistency, etc.
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("model_configs")
+}
+
+// Performance Metrics tracking
+model PerformanceMetric {
+  id                  String   @id @default(cuid())
+  modelConfigId       String
+  accuracy            Float
+  languageConsistency Float
+  biblicalAccuracy    Float
+  userSatisfaction    Float
+  totalQueries        Int
+  period              String   // "daily", "weekly", "monthly"
+  date                DateTime
+  createdAt           DateTime @default(now())
+
+  @@unique([modelConfigId, period, date])
+  @@index([date])
+  @@map("performance_metrics")
 }

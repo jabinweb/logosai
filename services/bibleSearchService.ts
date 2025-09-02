@@ -21,10 +21,18 @@ export interface BibleSearchResponse {
   aiCommentary?: AICommentary;
 }
 
+export interface BibleSearchPaginatedResponse {
+  results: SearchResult[];
+  totalCount: number;
+  hasMore: boolean;
+}
+
 // Bible search service
 export class BibleSearchService {
   private static instance: BibleSearchService;
   private prisma: PrismaClient;
+  private countCache: Map<string, { count: number; timestamp: number }> = new Map();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
   
   private constructor() {
     this.prisma = new PrismaClient();
@@ -45,6 +53,36 @@ export class BibleSearchService {
   }
 
   /**
+   * Get cached count or fetch new one
+   */
+  private async getCachedCount(cacheKey: string, whereClause: { 
+    versionId: number; 
+    text: { contains: string; mode: 'insensitive' }; 
+    book?: string 
+  }): Promise<number> {
+    const cached = this.countCache.get(cacheKey);
+    const now = Date.now();
+    
+    // Return cached count if still valid
+    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+      return cached.count;
+    }
+    
+    // Fetch new count and cache it
+    const count = await this.prisma.bibleVerse.count({ where: whereClause });
+    this.countCache.set(cacheKey, { count, timestamp: now });
+    
+    // Clean up old cache entries
+    for (const [key, value] of this.countCache.entries()) {
+      if ((now - value.timestamp) >= this.CACHE_TTL) {
+        this.countCache.delete(key);
+      }
+    }
+    
+    return count;
+  }
+
+  /**
    * Search for Bible verses and generate AI commentary
    */
   async searchBible(
@@ -55,19 +93,37 @@ export class BibleSearchService {
     try {
       // First, search for verses in the Bible
       const searchResults = await this.searchVerses(query, version, selectedBook);
-      
-      // If we found verses, generate AI commentary
-      let aiCommentary: AICommentary | undefined;
-      if (searchResults.length > 0) {
-        aiCommentary = await this.generateAICommentary(query, searchResults, version);
-      }
 
       return {
         results: searchResults,
-        aiCommentary
       };
     } catch (error) {
       console.error('Error in Bible search:', error);
+      throw new Error('Failed to search Bible. Please try again.');
+    }
+  }
+
+  /**
+   * Search for Bible verses with pagination
+   */
+  async searchBibleWithPagination(
+    query: string, 
+    version: string = 'ESV',
+    selectedBook?: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<BibleSearchPaginatedResponse> {
+    try {
+      // First, get the total count and paginated results
+      const { results, totalCount } = await this.searchVersesWithPagination(query, version, selectedBook, page, limit);
+      
+      return {
+        results,
+        totalCount,
+        hasMore: totalCount > page * limit
+      };
+    } catch (error) {
+      console.error('Error in paginated Bible search:', error);
       throw new Error('Failed to search Bible. Please try again.');
     }
   }
@@ -177,7 +233,7 @@ export class BibleSearchService {
           { chapter: 'asc' },
           { verse: 'asc' }
         ],
-        take: 20 // Limit results to prevent overwhelming the user
+        take: 100 // Increased limit to show more results for common terms
       });
 
       verses.forEach(verse => {
@@ -197,118 +253,142 @@ export class BibleSearchService {
   }
 
   /**
-   * Generate AI commentary using Gemini AI
+   * Search for specific verses in the Bible using database with pagination
    */
-  private async generateAICommentary(
+  private async searchVersesWithPagination(
     query: string,
-    searchResults: SearchResult[],
-    version: string
-  ): Promise<AICommentary> {
-    try {
-      // For now, we'll return a placeholder commentary
-      // In a real implementation, you would call the Gemini AI API here
-      
-      // This is where you would make the actual AI API call
-      // const aiResponse = await this.callGeminiAPI(query, versesText, version);
-      
-      // For demonstration, return a mock response
-      return this.generateMockCommentary(query, searchResults);
-    } catch (error) {
-      console.error('Error generating AI commentary:', error);
-      // Return a basic commentary even if AI fails
-      return {
-        explanation: `The search for "${query}" returned ${searchResults.length} verse${searchResults.length === 1 ? '' : 's'} from the ${version} Bible. These passages contain important spiritual insights that can guide our faith and understanding.`,
-        keyThemes: this.extractThemes(query, searchResults),
-      };
-    }
-  }
-
-  /**
-   * Generate mock commentary for demonstration
-   */
-  private generateMockCommentary(query: string, searchResults: SearchResult[]): AICommentary {
-    const themes = this.extractThemes(query, searchResults);
+    version: string,
+    selectedBook?: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ results: SearchResult[]; totalCount: number }> {
+    const results: SearchResult[] = [];
     
-    return {
-      explanation: `The search for "${query}" reveals profound spiritual truths found across ${searchResults.length} verse${searchResults.length === 1 ? '' : 's'}. These passages work together to illuminate God's character and His relationship with humanity, offering both timeless wisdom and practical guidance for daily living.`,
-      keyThemes: themes,
-      historicalContext: `These verses were written in various historical contexts, from ancient Israel's covenant relationship with God to the early Christian church's formation. Understanding the original audience and circumstances helps us better appreciate the depth and relevance of these teachings.`,
-      applicationToday: `These scriptures remain deeply relevant for modern believers. They offer guidance for navigating life's challenges, understanding God's love and grace, and living out our faith in practical ways. The principles found here can be applied to relationships, decision-making, and spiritual growth.`,
-      relatedVerses: this.suggestRelatedVerses(query, themes)
-    };
-  }
+    try {
+      // Get the Bible version from database
+      const bibleVersion = await this.prisma.bibleVersion.findUnique({
+        where: { code: version.toUpperCase() }
+      });
 
-  /**
-   * Extract themes from query and search results
-   */
-  private extractThemes(query: string, searchResults: SearchResult[]): string[] {
-    const themes: string[] = [];
-    const queryLower = query.toLowerCase();
-    const allText = searchResults.map(r => r.text.toLowerCase()).join(' ');
-
-    // Common biblical themes mapping
-    const themeMapping: Record<string, string[]> = {
-      'love': ['Love', 'Compassion', 'Grace'],
-      'faith': ['Faith', 'Trust', 'Belief'],
-      'hope': ['Hope', 'Promise', 'Future'],
-      'peace': ['Peace', 'Rest', 'Comfort'],
-      'salvation': ['Salvation', 'Redemption', 'Forgiveness'],
-      'prayer': ['Prayer', 'Communication with God', 'Worship'],
-      'wisdom': ['Wisdom', 'Understanding', 'Knowledge'],
-      'strength': ['Strength', 'Power', 'Courage'],
-      'joy': ['Joy', 'Celebration', 'Blessing'],
-      'forgiveness': ['Forgiveness', 'Mercy', 'Grace']
-    };
-
-    // Check query for themes
-    Object.entries(themeMapping).forEach(([key, values]) => {
-      if (queryLower.includes(key)) {
-        themes.push(...values);
+      if (!bibleVersion) {
+        throw new Error(`Bible version ${version} not found`);
       }
-    });
 
-    // Check text content for themes
-    if (allText.includes('love') || allText.includes('beloved')) themes.push('Love');
-    if (allText.includes('faith') || allText.includes('believe')) themes.push('Faith');
-    if (allText.includes('hope')) themes.push('Hope');
-    if (allText.includes('peace')) themes.push('Peace');
-    if (allText.includes('salvation') || allText.includes('saved')) themes.push('Salvation');
-    if (allText.includes('forgive') || allText.includes('mercy')) themes.push('Forgiveness');
-    if (allText.includes('wisdom') || allText.includes('wise')) themes.push('Wisdom');
+      // Check if query looks like a verse reference (e.g., "John 3:16", "1 John 1:1")
+      const versePattern = /^(\d?\s?\w+)\s+(\d+):(\d+)(?:-(\d+))?$/i;
+      const match = query.match(versePattern);
+      
+      if (match) {
+        const [, bookName, chapterStr, startVerseStr, endVerseStr] = match;
+        const chapter = parseInt(chapterStr);
+        const startVerse = parseInt(startVerseStr);
+        const endVerse = endVerseStr ? parseInt(endVerseStr) : startVerse;
 
-    // Remove duplicates and limit to 5 themes
-    return [...new Set(themes)].slice(0, 5);
-  }
+        // Normalize the book name to match database format
+        const normalizedBookName = await this.normalizeBookNameFromDB(bookName.trim(), bibleVersion.id);
+        
+        if (normalizedBookName) {
+          const verses = await this.prisma.bibleVerse.findMany({
+            where: {
+              versionId: bibleVersion.id,
+              book: normalizedBookName,
+              chapter: chapter,
+              verse: {
+                gte: startVerse,
+                lte: endVerse
+              }
+            },
+            orderBy: [
+              { verse: 'asc' }
+            ]
+          });
 
-  /**
-   * Suggest related verses based on themes
-   */
-  private suggestRelatedVerses(query: string, themes: string[]): string[] {
-    const relatedVerses: Record<string, string[]> = {
-      'Love': ['1 John 4:8', '1 Corinthians 13:4', 'Romans 8:38'],
-      'Faith': ['Hebrews 11:1', 'Romans 10:17', 'Mark 11:24'],
-      'Hope': ['Romans 15:13', 'Jeremiah 29:11', '1 Peter 1:3'],
-      'Peace': ['Philippians 4:7', 'Isaiah 26:3', 'John 14:27'],
-      'Salvation': ['Romans 10:9', 'Ephesians 2:8', 'Acts 4:12'],
-      'Forgiveness': ['1 John 1:9', 'Ephesians 4:32', 'Matthew 6:14'],
-      'Wisdom': ['Proverbs 3:5', 'James 1:5', 'Proverbs 9:10']
-    };
-
-    const suggestions: string[] = [];
-    themes.forEach(theme => {
-      if (relatedVerses[theme]) {
-        suggestions.push(...relatedVerses[theme]);
+          verses.forEach(verse => {
+            results.push({
+              book: verse.book,
+              chapter: verse.chapter.toString(),
+              verse: verse.verse.toString(),
+              text: verse.text
+            });
+          });
+        }
+        return { results, totalCount: results.length };
       }
-    });
 
-    // Add some general popular verses if no specific themes found
-    if (suggestions.length === 0) {
-      suggestions.push('John 3:16', 'Romans 8:28', 'Philippians 4:13', 'Psalm 23:1');
+      // Otherwise, perform a keyword search with pagination
+      const searchTerm = query.toLowerCase().trim();
+      
+      // Build the base where clause
+      const whereClause: {
+        versionId: number;
+        text: { contains: string; mode: 'insensitive' };
+        book?: string;
+      } = {
+        versionId: bibleVersion.id,
+        text: {
+          contains: searchTerm,
+          mode: 'insensitive'
+        }
+      };
+
+      // Add book filter if specified
+      if (selectedBook) {
+        const normalizedBookName = await this.normalizeBookNameFromDB(selectedBook, bibleVersion.id);
+        if (normalizedBookName) {
+          whereClause.book = normalizedBookName;
+        }
+      }
+
+      // For the first page, we can get both count and results efficiently
+      // For subsequent pages, we can skip the count query to improve performance
+      let totalCount: number;
+      
+      if (page === 1) {
+        // Create cache key for this search
+        const cacheKey = `${bibleVersion.id}_${searchTerm}_${selectedBook || 'all'}`;
+        totalCount = await this.getCachedCount(cacheKey, whereClause);
+      } else {
+        // For subsequent pages, we'll estimate or use a cached count
+        // For now, set to a high number to indicate more results exist
+        totalCount = 9999; // Will be replaced by actual count from first page
+      }
+
+      // Get paginated results with optimized query
+      const offset = (page - 1) * limit;
+      const verses = await this.prisma.bibleVerse.findMany({
+        where: whereClause,
+        select: {
+          book: true,
+          chapter: true,
+          verse: true,
+          text: true
+        },
+        orderBy: [
+          { book: 'asc' },
+          { chapter: 'asc' },
+          { verse: 'asc' }
+        ],
+        skip: offset,
+        take: limit
+      });
+
+      verses.forEach(verse => {
+        results.push({
+          book: verse.book,
+          chapter: verse.chapter.toString(),
+          verse: verse.verse.toString(),
+          text: verse.text
+        });
+      });
+
+      return { results, totalCount };
+    } catch (error) {
+      console.error('Error searching verses with pagination:', error);
+      throw new Error('Failed to search Bible verses');
     }
-
-    return [...new Set(suggestions)].slice(0, 6);
   }
 
+  
   /**
    * Normalize book names using database book names
    */

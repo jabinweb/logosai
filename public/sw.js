@@ -1,5 +1,5 @@
-const STATIC_CACHE_NAME = 'logos-ai-static-v1';
-const DYNAMIC_CACHE_NAME = 'logos-ai-dynamic-v1';
+const STATIC_CACHE_NAME = 'logos-ai-static-v2';
+const DYNAMIC_CACHE_NAME = 'logos-ai-dynamic-v2';
 
 // Files to cache immediately
 const STATIC_FILES = [

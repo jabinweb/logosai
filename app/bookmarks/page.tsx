@@ -6,7 +6,6 @@ import Link from "next/link";
 import { BookmarkIcon, TrashIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { BookmarkItem } from "../../services/bookmarkService";
 import { createVerseUrl } from "../../utils/bibleUtils";
-import { Header, Footer } from "../../components/layout";
 
 export default function BookmarksPage() {
   const { data: session } = useSession();
@@ -59,9 +58,7 @@ export default function BookmarksPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
-        <Header />
-        <main className="flex items-center justify-center min-h-[50vh]">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">        <main className="flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Sign in Required
@@ -76,16 +73,12 @@ export default function BookmarksPage() {
               Go Home
             </Link>
           </div>
-        </main>
-        <Footer />
-      </div>
+        </main>      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
-      <Header />
-      
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">      
       {/* Page Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -238,9 +231,6 @@ export default function BookmarksPage() {
             ))}
           </div>
         )}
-      </main>
-      
-      <Footer />
-    </div>
+      </main>    </div>
   );
 }

@@ -69,7 +69,7 @@ export class GeminiAIService {
       languageInstruction = 'IMPORTANT: Respond completely in Hinglish (Hindi-English mix using Roman script for Hindi words) only. Write Hindi words in Roman script like "bhagwan", "prabhu", "ishwar", "pyar", "vishwas", "mukti" etc. Mix English and Romanized Hindi naturally. Use biblical tone and reverent language mixing Hindi and English. Example: "Bhagwan ka pyar bahut great hai aur uske through hume salvation milti hai." ';
       bibleVersions = 'Use ONLY the IBP (Indian Bible Publication) Hindi Bible for verification. IMPORTANT: Provide the actual Hindi Bible verses in proper Devanagari script (Hindi), NOT in Roman transliteration. The verse text must be exactly as written in the Hindi Bible using Hindi script.';
     } else {
-      languageInstruction = 'IMPORTANT: Respond completely in English language only. All text including answer, themes, and explanation must be in English. Use biblical tone and reverent language in English. ';
+      languageInstruction = 'CRITICAL REQUIREMENT: You MUST respond ONLY in English language. DO NOT use Hindi, Devanagari script, or any Indian language. ALL content including answer, themes, and explanation MUST be written in English using Latin alphabet only. Use biblical tone and reverent language in English ONLY. If you detect the user query is in English, you must respond in English. ';
       bibleVersions = 'Use both ESV (English Standard Version) and NIV (New International Version) Bible translations for verification.';
     }
 

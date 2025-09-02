@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "../components/Providers";
 import ServiceWorkerRegistration from "../components/ServiceWorkerRegistration";
 import PWAInstallPrompt from "../components/PWAInstallPrompt";
+import { ConditionalLayout } from "../components/layout";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -60,7 +61,9 @@ export default function RootLayout({
         className={`${inter.variable} ${eczar.variable} antialiased font-sans bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200`}
       >
         <Providers>
-          {children}
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
           <ServiceWorkerRegistration />
           <PWAInstallPrompt />
         </Providers>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BibleSearchService } from '@/services/bibleSearchService';
+// Remove BibleSearchService import as we'll use API instead
 import { 
   ReadHeader, 
   MobileNavigation, 
@@ -64,6 +64,10 @@ function ReadBibleContent() {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchScope, setSearchScope] = useState<'current' | 'all'>('current');
+  const [searchTotalCount, setSearchTotalCount] = useState(0);
+  const [searchCurrentPage, setSearchCurrentPage] = useState(1);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // State for verse highlighting from URL
   const [highlightedVerse, setHighlightedVerse] = useState<string | null>(null);
@@ -688,44 +692,92 @@ function ReadBibleContent() {
   // Debounced search function for real-time search
   const debouncedSearchRef = useRef<NodeJS.Timeout | null>(null);
 
-  const performSearch = useCallback(async (query: string) => {
+  const performSearch = useCallback(async (query: string, page: number = 1, append: boolean = false) => {
     if (!query.trim()) {
       setSearchResults([]);
       setShowSearchResults(false);
+      setSearchTotalCount(0);
+      setSearchCurrentPage(1);
+      setSearchHasMore(false);
       return;
     }
 
-    setIsSearching(true);
-    setSearchResults([]);
+    // Prevent very short searches that could be slow (except verse references)
+    const isVerseReference = /^\d?\s?\w+\s+\d+:\d+/.test(query.trim());
+    if (!isVerseReference && query.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      setSearchTotalCount(0);
+      setSearchCurrentPage(1);
+      setSearchHasMore(false);
+      return;
+    }
+
+    if (page === 1) {
+      setIsSearching(true);
+      setSearchResults([]);
+    } else {
+      setIsLoadingMore(true);
+    }
 
     try {
-      // Use the database-powered search service
-      const bibleSearchService = BibleSearchService.getInstance();
+      // Build search API URL with parameters
+      const searchParams = new URLSearchParams({
+        q: query.trim(),
+        version: selectedVersion,
+        page: page.toString(),
+        limit: '20'
+      });
       
-      // Determine the book scope for search
-      const searchBook = searchScope === 'current' ? selectedBook : undefined;
+      // Add book parameter if searching current book only
+      if (searchScope === 'current') {
+        searchParams.append('book', selectedBook);
+      }
       
-      // Perform the search using the database
-      const response = await bibleSearchService.searchBible(query, selectedVersion, searchBook);
+      // For subsequent pages, pass the known total count to avoid recalculating
+      if (page > 1 && searchTotalCount > 0) {
+        searchParams.append('totalCount', searchTotalCount.toString());
+      }
       
-      // Convert the response format to match the expected interface
-      const results = response.results.map(result => ({
-        book: result.book,
-        chapter: result.chapter,
-        verse: result.verse,
-        text: result.text
-      }));
-
-      setSearchResults(results);
+      // Call the search API
+      const response = await fetch(`/api/bible/search?${searchParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Set the search results
+      if (append && page > 1) {
+        setSearchResults(prev => [...prev, ...(data.results || [])]);
+      } else {
+        setSearchResults(data.results || []);
+      }
+      
+      setSearchTotalCount(data.totalCount || 0);
+      setSearchCurrentPage(page);
+      setSearchHasMore(data.hasMore || false);
       setShowSearchResults(true);
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
       setShowSearchResults(true);
+      setSearchTotalCount(0);
+      setSearchHasMore(false);
     } finally {
       setIsSearching(false);
+      setIsLoadingMore(false);
     }
-  }, [selectedVersion, selectedBook, searchScope]);
+  }, [selectedVersion, selectedBook, searchScope, searchTotalCount]);
+
+  // Load more search results
+  const loadMoreSearchResults = useCallback(async () => {
+    if (!searchQuery.trim() || !searchHasMore || isLoadingMore) return;
+    
+    const nextPage = searchCurrentPage + 1;
+    await performSearch(searchQuery, nextPage, true);
+  }, [searchQuery, searchHasMore, searchCurrentPage, isLoadingMore, performSearch]);
 
   // Debounced search trigger for real-time search
   const triggerDebouncedSearch = useCallback((query: string) => {
@@ -734,10 +786,15 @@ function ReadBibleContent() {
       clearTimeout(debouncedSearchRef.current);
     }
 
+    // For short queries or verse references, search immediately
+    // For longer queries, use shorter debounce to feel more responsive
+    const isVerseReference = /^\d?\s?\w+\s+\d+:\d+/.test(query.trim());
+    const delay = isVerseReference || query.trim().length <= 3 ? 100 : 200; // Reduced delay
+
     // Set new timeout for search
     debouncedSearchRef.current = setTimeout(() => {
       performSearch(query);
-    }, 300); // 300ms delay
+    }, delay);
   }, [performSearch]);
 
   // Custom search query handler with debounced search
@@ -745,6 +802,15 @@ function ReadBibleContent() {
     setSearchQuery(query);
     triggerDebouncedSearch(query);
   }, [triggerDebouncedSearch]);
+
+  // Re-run search when search scope changes
+  useEffect(() => {
+    if (searchQuery.trim() && showSearchResults) {
+      // Reset pagination and trigger new search
+      setSearchCurrentPage(1);
+      performSearch(searchQuery, 1, false);
+    }
+  }, [searchScope, performSearch, searchQuery, showSearchResults]);
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -830,6 +896,9 @@ function ReadBibleContent() {
         showSearchResults={showSearchResults}
         searchResults={searchResults}
         searchQuery={searchQuery}
+        totalCount={searchTotalCount}
+        hasMore={searchHasMore}
+        isLoadingMore={isLoadingMore}
         onResultClick={(result) => {
           setSelectedBook(result.book);
           setSelectedChapter(result.chapter);
@@ -837,6 +906,7 @@ function ReadBibleContent() {
           updateURL(result.book, result.chapter, result.verse);
         }}
         onClose={() => setShowSearchResults(false)}
+        onLoadMore={loadMoreSearchResults}
       />
 
       {/* Main Content */}

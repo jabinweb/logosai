@@ -1,12 +1,8 @@
 'use client';
 
-import { Header, Footer } from '../../components/layout';
 
 export default function Privacy() {
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 transition-colors duration-300">
+  return (<div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 transition-colors duration-300">
         
         {/* Hero Section */}
         <section className="pt-16 pb-12 px-4 sm:px-6 lg:px-8">
@@ -129,8 +125,5 @@ export default function Privacy() {
           </div>
         </section>
 
-      </div>
-      <Footer />
-    </>
-  );
+      </div>);
 }

@@ -14,12 +14,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('🤖 AI API called with:', { query, language, context });
+
     const geminiService = GeminiAIService.getInstance();
     const result = await geminiService.searchAndAnalyze({
       query,
       language: language || 'english',
       context
     });
+
+    console.log('✅ AI API response generated for language:', language || 'english');
 
     // Save to search history if user is authenticated
     try {

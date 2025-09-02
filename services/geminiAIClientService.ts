@@ -49,14 +49,19 @@ export class GeminiAIClientService {
   }
 
   async detectLanguage(text: string): Promise<'hindi' | 'english' | 'hinglish'> {
-    // Enhanced language detection - avoid Hinglish, prefer Hindi or English
+    // Enhanced language detection with strict English preference
     const hindiPattern = /[\u0900-\u097F]/;
     const englishPattern = /[a-zA-Z]/;
     
-    // Common Hindi words in Roman script
+    // Common Hindi words in Roman script - be more selective
     const hindiWordsInRoman = [
-      /\b(bhagwan|ishwar|prabhu|yesu|yeshu|masih|dharma|karma|seva|bhakti|moksha|swarg|narak|punya|paap|mandir|gurudwara|gita|ramayana|mahabharata|guru|pandit|prayer|prarthana|puja|aarti|bhajan|kirtan|satsang|darshan|tilak|prasad|langar|vrat|tyohar|diwali|holi|navratri)\b/gi,
-      /\b(kya|hai|hain|ka|ki|ke|me|main|aur|ya|toh|to|jo|ji|bhi|nahi|nahin|hum|tum|aap|uska|uski|iske|iska|woh|yeh|ye|kaise|kyun|kyu|kab|kahan|kon|kaun|kuch|sab|sabko|sabse|mere|mera|meri|tera|teri|tumhara|tumhari|apna|apni|apne)\b/gi
+      /\b(bhagwan|ishwar|prabhu|yesu|yeshu|masih|dharma|karma|seva|bhakti|moksha|swarg|narak|punya|paap|mandir|gurudwara|gita|ramayana|mahabharata|guru|pandit|prarthana|puja|aarti|bhajan|kirtan|satsang|darshan|tilak|prasad|langar|vrat|tyohar|diwali|holi|navratri)\b/gi,
+      /\b(kya|hai|hain|kaise|kyun|kyu|kab|kahan|kon|kaun|mere|mera|meri|tera|teri|tumhara|tumhari|apna|apni|apne|uska|uski|iske|iska|woh|yeh|ye)\b/gi
+    ];
+    
+    // Common English religious/biblical words that should stay English
+    const englishBiblicalWords = [
+      /\b(god|jesus|christ|lord|prayer|pray|bible|scripture|verse|church|faith|believe|salvation|heaven|hell|sin|forgiveness|love|hope|peace|blessing|worship|praise|holy|spirit|father|son|gospel|apostle|prophet|disciple|miracle|parable|psalm|proverb|commandment|covenant|grace|mercy|eternal|resurrection|kingdom|angel|demon|satan|devil|trinity|baptism|communion|cross|crucifixion|redemption|atonement|righteousness|sanctification|justification)\b/gi
     ];
     
     const hasHindi = hindiPattern.test(text);
@@ -65,17 +70,30 @@ export class GeminiAIClientService {
     // Check for Hindi words in Roman script
     const hasHindiWordsInRoman = hindiWordsInRoman.some(pattern => pattern.test(text));
     
+    // Check for English biblical words
+    const hasEnglishBiblicalWords = englishBiblicalWords.some(pattern => pattern.test(text));
+    
     // If actual Hindi script is present, always prefer Hindi
     if (hasHindi) {
       return 'hindi';
     }
     
-    // If Roman script has significant Hindi words, treat as Hindi
-    if (hasHindiWordsInRoman && hasEnglish) {
-      return 'hindi'; // Changed from 'hinglish' to 'hindi'
+    // If contains English biblical words, strongly prefer English
+    if (hasEnglishBiblicalWords && hasEnglish) {
+      return 'english';
     }
     
-    // Default to English
+    // If Roman script has significant Hindi words AND no strong English indicators, treat as Hindi
+    if (hasHindiWordsInRoman && hasEnglish && !hasEnglishBiblicalWords) {
+      return 'hindi';
+    }
+    
+    // If it's purely English characters and common English words, return English
+    if (hasEnglish && !hasHindiWordsInRoman) {
+      return 'english';
+    }
+    
+    // Default to English for ambiguous cases
     return 'english';
   }
 }

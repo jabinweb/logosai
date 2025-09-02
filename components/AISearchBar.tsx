@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { getFontClassForText } from '../utils/textUtils';
 
@@ -14,10 +14,22 @@ interface AISearchBarProps {
 export default function AISearchBar({
   onSearch,
   isSearching = false,
-  placeholder = "Ask any question about the Bible or search for topics (e.g., 'प्रेम क्या है', 'What is love?', 'faith in Hindi')",
+  placeholder = "Ask any question about the Bible...",
   className = ""
 }: AISearchBarProps) {
   const [query, setQuery] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,9 +63,10 @@ export default function AISearchBar({
     <div className={`space-y-4 ${className}`}>
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative">
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-            <SparklesIcon className="w-5 h-5 text-blue-500" />
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">AI</span>
+          {/* AI Icon and Label */}
+          <div className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 flex items-center space-x-1 sm:space-x-2">
+            <SparklesIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">AI</span>
           </div>
           
           <input
@@ -62,7 +75,7 @@ export default function AISearchBar({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
             disabled={isSearching}
-            className={`w-full pl-16 pr-24 py-4 text-lg border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${getFontClassForText(query)}`}
+            className={`w-full pl-12 sm:pl-16 pr-20 sm:pr-24 py-3 sm:py-4 text-base sm:text-lg border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${getFontClassForText(query)}`}
           />
           
           {/* Clear button */}
@@ -70,9 +83,9 @@ export default function AISearchBar({
             <button
               type="button"
               onClick={handleClear}
-              className="absolute right-16 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="absolute right-14 sm:right-16 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -82,17 +95,17 @@ export default function AISearchBar({
           <button
             type="submit"
             disabled={!query.trim() || isSearching}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 sm:px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSearching ? (
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                <span className="hidden sm:inline">Thinking...</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-white border-t-transparent"></div>
+                <span className="hidden sm:inline text-sm">Thinking...</span>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
-                <MagnifyingGlassIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Search</span>
+              <div className="flex items-center space-x-1 sm:space-x-2">
+                <MagnifyingGlassIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline text-sm">Search</span>
               </div>
             )}
           </button>
@@ -102,22 +115,23 @@ export default function AISearchBar({
       {/* Search suggestions */}
       <div className="text-sm text-gray-600 dark:text-gray-400">
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="font-medium">Try:</span>
-          {suggestions.slice(0, 4).map((suggestion, index) => (
+          <span className="font-medium text-xs sm:text-sm">Try:</span>
+          {suggestions.slice(0, isMobile ? 6 : 8).map((suggestion, index) => (
             <button
               key={index}
               type="button"
               onClick={() => setQuery(suggestion)}
-              className={`px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs ${getFontClassForText(suggestion)}`}
+              className={`px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-xs ${getFontClassForText(suggestion)} truncate max-w-[140px] sm:max-w-none`}
+              title={suggestion}
             >
-              {suggestion}
+              {suggestion.length > 18 && isMobile ? `${suggestion.substring(0, 15)}...` : suggestion}
             </button>
           ))}
         </div>
         <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
           <span className="inline-flex items-center space-x-1">
             <SparklesIcon className="w-3 h-3" />
-            <span>LogosAI • Supports Hindi, English & Hinglish</span>
+            <span className="text-xs">LogosAI • Supports Hindi, English & Hinglish</span>
           </span>
         </div>
       </div>
