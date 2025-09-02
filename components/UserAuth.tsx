@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { UserIcon, ChevronDownIcon, BookmarkIcon, ClockIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
+import { UserIcon, ChevronDownIcon, BookmarkIcon, ClockIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
@@ -9,6 +9,7 @@ import { useState, useRef, useEffect } from "react";
 export default function UserAuth() {
   const { data: session, status } = useSession();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -22,6 +23,25 @@ export default function UserAuth() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Fetch user role when session is available
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (session?.user?.email) {
+        try {
+          const response = await fetch('/api/user/role');
+          if (response.ok) {
+            const data = await response.json();
+            setUserRole(data.role);
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [session]);
 
   if (status === "loading") {
     return (
@@ -107,6 +127,18 @@ export default function UserAuth() {
                 <BookmarkIcon className="h-5 w-5 mr-3 text-gray-400" />
                 My Bookmarks
               </Link>
+
+              {/* Admin Panel Link - only show for admins */}
+              {userRole === 'admin' && (
+                <Link
+                  href="/admin"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <ShieldCheckIcon className="h-5 w-5 mr-3 text-gray-400" />
+                  Admin Panel
+                </Link>
+              )}
 
               <button
                 onClick={() => {

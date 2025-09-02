@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Eczar } from "next/font/google";
 import "./globals.css";
 import Providers from "../components/Providers";
+import ServiceWorkerRegistration from "../components/ServiceWorkerRegistration";
+import PWAInstallPrompt from "../components/PWAInstallPrompt";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -22,6 +24,29 @@ export const metadata: Metadata = {
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Logos AI',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'Logos AI',
+    'application-name': 'Logos AI',
+    'msapplication-TileColor': '#2563eb',
+    'msapplication-config': '/browserconfig.xml',
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#2563eb',
 };
 
 export default function RootLayout({
@@ -36,6 +61,8 @@ export default function RootLayout({
       >
         <Providers>
           {children}
+          <ServiceWorkerRegistration />
+          <PWAInstallPrompt />
         </Providers>
       </body>
     </html>
