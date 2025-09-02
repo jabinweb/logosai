@@ -1,3 +1,5 @@
+import { PrismaClient } from '@prisma/client';
+
 // Types for Bible search and AI commentary
 export interface SearchResult {
   book: string;
@@ -22,12 +24,24 @@ export interface BibleSearchResponse {
 // Bible search service
 export class BibleSearchService {
   private static instance: BibleSearchService;
+  private prisma: PrismaClient;
+  
+  private constructor() {
+    this.prisma = new PrismaClient();
+  }
   
   static getInstance(): BibleSearchService {
     if (!BibleSearchService.instance) {
       BibleSearchService.instance = new BibleSearchService();
     }
     return BibleSearchService.instance;
+  }
+
+  /**
+   * Cleanup method to disconnect Prisma client
+   */
+  async disconnect(): Promise<void> {
+    await this.prisma.$disconnect();
   }
 
   /**
@@ -59,7 +73,7 @@ export class BibleSearchService {
   }
 
   /**
-   * Search for specific verses in the Bible
+   * Search for specific verses in the Bible using database
    */
   private async searchVerses(
     query: string,
@@ -67,29 +81,41 @@ export class BibleSearchService {
     selectedBook?: string
   ): Promise<SearchResult[]> {
     try {
-      // Load the Bible data from local JSON files
-      const response = await fetch(`/bibles/${version}_bible.json`);
-      if (!response.ok) {
-        throw new Error(`Failed to load ${version} Bible`);
+      // Get the Bible version from database
+      const bibleVersion = await this.prisma.bibleVersion.findUnique({
+        where: { code: version.toUpperCase() }
+      });
+
+      if (!bibleVersion) {
+        throw new Error(`Bible version ${version} not found`);
       }
-      
-      const bibleData = await response.json();
+
       const results: SearchResult[] = [];
-      const searchTerm = query.toLowerCase();
 
       // Check if the query is a specific verse reference (e.g., "John 3:16")
       const verseMatch = query.match(/^(\d?\s?\w+)\s+(\d+):(\d+)$/);
       if (verseMatch) {
-        const [, bookName, chapter, verse] = verseMatch;
-        const normalizedBookName = this.normalizeBookName(bookName, bibleData);
+        const [, bookName, chapterNum, verseNum] = verseMatch;
+        const normalizedBookName = await this.normalizeBookNameFromDB(bookName, bibleVersion.id);
         
-        if (normalizedBookName && bibleData[normalizedBookName]?.[chapter]?.[verse]) {
-          results.push({
-            book: normalizedBookName,
-            chapter,
-            verse,
-            text: bibleData[normalizedBookName][chapter][verse]
+        if (normalizedBookName) {
+          const verse = await this.prisma.bibleVerse.findFirst({
+            where: {
+              versionId: bibleVersion.id,
+              book: normalizedBookName,
+              chapter: parseInt(chapterNum),
+              verse: parseInt(verseNum)
+            }
           });
+
+          if (verse) {
+            results.push({
+              book: verse.book,
+              chapter: verse.chapter.toString(),
+              verse: verse.verse.toString(),
+              text: verse.text
+            });
+          }
         }
         return results;
       }
@@ -97,17 +123,25 @@ export class BibleSearchService {
       // Check if the query is a chapter reference (e.g., "John 3" or "Psalm 23")
       const chapterMatch = query.match(/^(\d?\s?\w+)\s+(\d+)$/);
       if (chapterMatch) {
-        const [, bookName, chapter] = chapterMatch;
-        const normalizedBookName = this.normalizeBookName(bookName, bibleData);
+        const [, bookName, chapterNum] = chapterMatch;
+        const normalizedBookName = await this.normalizeBookNameFromDB(bookName, bibleVersion.id);
         
-        if (normalizedBookName && bibleData[normalizedBookName]?.[chapter]) {
-          const verses = bibleData[normalizedBookName][chapter];
-          Object.entries(verses).forEach(([verse, text]) => {
-            results.push({
+        if (normalizedBookName) {
+          const verses = await this.prisma.bibleVerse.findMany({
+            where: {
+              versionId: bibleVersion.id,
               book: normalizedBookName,
-              chapter,
-              verse,
-              text: text as string
+              chapter: parseInt(chapterNum)
+            },
+            orderBy: { verse: 'asc' }
+          });
+
+          verses.forEach(verse => {
+            results.push({
+              book: verse.book,
+              chapter: verse.chapter.toString(),
+              verse: verse.verse.toString(),
+              text: verse.text
             });
           });
         }
@@ -115,28 +149,47 @@ export class BibleSearchService {
       }
 
       // Otherwise, perform a keyword search
-      const booksToSearch = selectedBook ? [selectedBook] : Object.keys(bibleData);
-      
-      for (const book of booksToSearch) {
-        const bookData = bibleData[book];
-        if (!bookData) continue;
+      const searchTerm = query.toLowerCase();
+      const whereClause: {
+        versionId: number;
+        text: { contains: string; mode: 'insensitive' };
+        book?: string;
+      } = {
+        versionId: bibleVersion.id,
+        text: {
+          contains: searchTerm,
+          mode: 'insensitive'
+        }
+      };
 
-        for (const [chapter, verses] of Object.entries(bookData)) {
-          for (const [verse, text] of Object.entries(verses as Record<string, string>)) {
-            if (text.toLowerCase().includes(searchTerm)) {
-              results.push({
-                book,
-                chapter,
-                verse,
-                text
-              });
-            }
-          }
+      // Add book filter if specified
+      if (selectedBook) {
+        const normalizedBookName = await this.normalizeBookNameFromDB(selectedBook, bibleVersion.id);
+        if (normalizedBookName) {
+          whereClause.book = normalizedBookName;
         }
       }
 
-      // Limit results to prevent overwhelming the user
-      return results.slice(0, 20);
+      const verses = await this.prisma.bibleVerse.findMany({
+        where: whereClause,
+        orderBy: [
+          { book: 'asc' },
+          { chapter: 'asc' },
+          { verse: 'asc' }
+        ],
+        take: 20 // Limit results to prevent overwhelming the user
+      });
+
+      verses.forEach(verse => {
+        results.push({
+          book: verse.book,
+          chapter: verse.chapter.toString(),
+          verse: verse.verse.toString(),
+          text: verse.text
+        });
+      });
+
+      return results;
     } catch (error) {
       console.error('Error searching verses:', error);
       throw new Error('Failed to search Bible verses');
@@ -257,7 +310,118 @@ export class BibleSearchService {
   }
 
   /**
-   * Normalize book names to match the JSON structure
+   * Normalize book names using database book names
+   */
+  private async normalizeBookNameFromDB(bookName: string, versionId: number): Promise<string | null> {
+    const inputName = bookName.toLowerCase().trim();
+    
+    // Get all distinct book names from the database for this version
+    const books = await this.prisma.bibleVerse.findMany({
+      where: { versionId },
+      distinct: ['book'],
+      select: { book: true }
+    });
+    
+    const bookNames = books.map(b => b.book);
+    
+    // Try exact match first
+    const exactMatch = bookNames.find(name => name.toLowerCase() === inputName);
+    if (exactMatch) return exactMatch;
+    
+    // Try partial match
+    const partialMatch = bookNames.find(name => 
+      name.toLowerCase().includes(inputName) || inputName.includes(name.toLowerCase())
+    );
+    if (partialMatch) return partialMatch;
+    
+    // Common abbreviations
+    const abbreviations: Record<string, string> = {
+      'gen': 'Genesis',
+      'ex': 'Exodus',
+      'exod': 'Exodus',
+      'lev': 'Leviticus',
+      'num': 'Numbers',
+      'deut': 'Deuteronomy',
+      'josh': 'Joshua',
+      'judg': 'Judges',
+      'ruth': 'Ruth',
+      '1 sam': '1 Samuel',
+      '2 sam': '2 Samuel',
+      '1 kings': '1 Kings',
+      '2 kings': '2 Kings',
+      '1 chr': '1 Chronicles',
+      '2 chr': '2 Chronicles',
+      'ezra': 'Ezra',
+      'neh': 'Nehemiah',
+      'esth': 'Esther',
+      'job': 'Job',
+      'ps': 'Psalm',
+      'psalm': 'Psalm',
+      'psalms': 'Psalm',
+      'prov': 'Proverbs',
+      'eccl': 'Ecclesiastes',
+      'song': 'Song of Solomon',
+      'isa': 'Isaiah',
+      'jer': 'Jeremiah',
+      'lam': 'Lamentations',
+      'ezek': 'Ezekiel',
+      'dan': 'Daniel',
+      'hos': 'Hosea',
+      'joel': 'Joel',
+      'amos': 'Amos',
+      'obad': 'Obadiah',
+      'jonah': 'Jonah',
+      'mic': 'Micah',
+      'nah': 'Nahum',
+      'hab': 'Habakkuk',
+      'zeph': 'Zephaniah',
+      'hag': 'Haggai',
+      'zech': 'Zechariah',
+      'mal': 'Malachi',
+      'matt': 'Matthew',
+      'mt': 'Matthew',
+      'mark': 'Mark',
+      'mk': 'Mark',
+      'luke': 'Luke',
+      'lk': 'Luke',
+      'john': 'John',
+      'jn': 'John',
+      'acts': 'Acts',
+      'rom': 'Romans',
+      '1 cor': '1 Corinthians',
+      '2 cor': '2 Corinthians',
+      'gal': 'Galatians',
+      'eph': 'Ephesians',
+      'phil': 'Philippians',
+      'col': 'Colossians',
+      '1 thess': '1 Thessalonians',
+      '2 thess': '2 Thessalonians',
+      '1 tim': '1 Timothy',
+      '2 tim': '2 Timothy',
+      'titus': 'Titus',
+      'philem': 'Philemon',
+      'heb': 'Hebrews',
+      'james': 'James',
+      'jas': 'James',
+      '1 pet': '1 Peter',
+      '2 pet': '2 Peter',
+      '1 john': '1 John',
+      '2 john': '2 John',
+      '3 john': '3 John',
+      'jude': 'Jude',
+      'rev': 'Revelation'
+    };
+    
+    const abbreviatedName = abbreviations[inputName];
+    if (abbreviatedName) {
+      return bookNames.find(name => name.toLowerCase() === abbreviatedName.toLowerCase()) || null;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Normalize book names to match the JSON structure (legacy method, kept for compatibility)
    */
   private normalizeBookName(bookName: string, bibleData: Record<string, unknown>): string | null {
     const inputName = bookName.toLowerCase().trim();

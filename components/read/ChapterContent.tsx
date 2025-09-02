@@ -397,11 +397,11 @@ export default function ChapterContent({
       case 'compact':
         return 'leading-tight';
       case 'normal':
-        return 'leading-normal';
+        return 'leading-[1.9em]';
       case 'relaxed':
-        return 'leading-relaxed';
+        return 'leading-[2.2em]';
       case 'loose':
-        return 'leading-loose';
+        return 'leading-[2.5em]';
       default:
         return 'leading-normal';
     }
@@ -491,7 +491,7 @@ export default function ChapterContent({
           <div 
             key={verse} 
             id={`verse-${verse}`} 
-            className="group select-none"
+            className="group select-none mb-4"
           >
             <div className="flex items-start space-x-3 sm:space-x-6">
               <div className="relative">

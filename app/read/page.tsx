@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { BibleSearchService } from '@/services/bibleSearchService';
 import { 
   ReadHeader, 
   MobileNavigation, 
@@ -275,29 +276,66 @@ function ReadBibleContent() {
     }
   }, [searchParams, bibleVersions, normalizeBookName]);
 
-  // Load Bible versions
+  // Load Bible versions from database
   useEffect(() => {
-    const versions: BibleVersion[] = [
-      {
-        id: 'ESV',
-        name: 'English Standard Version',
-        language: 'English',
-        description: 'English Standard Version - A literal translation emphasizing word-for-word accuracy'
-      },
-      {
-        id: 'NIV',
-        name: 'New International Version',
-        language: 'English',
-        description: 'New International Version - A thought-for-thought translation for modern readers'
-      },
-      {
-        id: 'IBP',
-        name: 'Indian Bible Publishers',
-        language: 'Hindi',
-        description: 'Indian Bible in Hindi - हिंदी में बाइबल'
+    const loadBibleVersions = async () => {
+      try {
+        const response = await fetch('/api/bible/versions');
+        if (response.ok) {
+          const versions: BibleVersion[] = await response.json();
+          setBibleVersions(versions);
+        } else {
+          // Fallback to hardcoded versions if API fails
+          const fallbackVersions: BibleVersion[] = [
+            {
+              id: 'ESV',
+              name: 'English Standard Version',
+              language: 'English',
+              description: 'English Standard Version - A literal translation emphasizing word-for-word accuracy'
+            },
+            {
+              id: 'NIV',
+              name: 'New International Version',
+              language: 'English',
+              description: 'New International Version - A thought-for-thought translation for modern readers'
+            },
+            {
+              id: 'IBP',
+              name: 'Indian Bible Publishers',
+              language: 'Hindi',
+              description: 'Indian Bible in Hindi - हिंदी में बाइबल'
+            }
+          ];
+          setBibleVersions(fallbackVersions);
+        }
+      } catch (error) {
+        console.error('Failed to load Bible versions:', error);
+        // Use fallback versions on error
+        const fallbackVersions: BibleVersion[] = [
+          {
+            id: 'ESV',
+            name: 'English Standard Version',
+            language: 'English',
+            description: 'English Standard Version - A literal translation emphasizing word-for-word accuracy'
+          },
+          {
+            id: 'NIV',
+            name: 'New International Version',
+            language: 'English',
+            description: 'New International Version - A thought-for-thought translation for modern readers'
+          },
+          {
+            id: 'IBP',
+            name: 'Indian Bible Publishers',
+            language: 'Hindi',
+            description: 'Indian Bible in Hindi - हिंदी में बाइबल'
+          }
+        ];
+        setBibleVersions(fallbackVersions);
       }
-    ];
-    setBibleVersions(versions);
+    };
+    
+    loadBibleVersions();
   }, []);
 
   // Auto-select Eczar font for Hindi Bible (IBP version)
@@ -357,17 +395,16 @@ function ReadBibleContent() {
         setIsLoading(true);
         console.log(`🔄 Loading ${selectedVersion} Bible data...`);
         
-        const response = await fetch(`/bibles/${selectedVersion}_bible.json`);
+        // Clear cached Bible data when version changes
+        setBibleData(null);
         
-        if (!response.ok) {
-          throw new Error(`Failed to load ${selectedVersion} Bible`);
+        // First, get the list of books for this version
+        const booksResponse = await fetch(`/api/bible/${selectedVersion}/books`);
+        if (!booksResponse.ok) {
+          throw new Error(`Failed to load books for ${selectedVersion} Bible`);
         }
-
-        const data: BibleData = await response.json();
-        setBibleData(data);
         
-        // Extract books from the data
-        const bookList = Object.keys(data);
+        const bookList: string[] = await booksResponse.json();
         setBooks(bookList);
         
         // Set default book if current selection doesn't exist in this version
@@ -380,6 +417,7 @@ function ReadBibleContent() {
       } catch (error) {
         console.error('Error loading Bible data:', error);
         setBibleData(null);
+        setBooks([]);
       } finally {
         setIsLoading(false);
       }
@@ -391,29 +429,158 @@ function ReadBibleContent() {
     }
   }, [selectedVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Validate and update book selection when Bible data changes
+  // Load chapters when version or book changes
   useEffect(() => {
-    if (bibleData && books.length > 0 && selectedBook) {
-      // Check if the current book exists in the loaded Bible data
-      if (!books.includes(selectedBook)) {
-        console.log(`📖 Book "${selectedBook}" not found in loaded Bible data, setting to ${books[0] || 'Genesis'}`);
-        setSelectedBook(books[0] || 'Genesis');
-      }
-    }
-  }, [bibleData, books, selectedBook]);
-
-  // Update chapters when book changes
-  useEffect(() => {
-    if (bibleData && selectedBook && bibleData[selectedBook]) {
-      const chapterList = Object.keys(bibleData[selectedBook]).sort((a, b) => parseInt(a) - parseInt(b));
-      setChapters(chapterList);
+    const loadChapters = async () => {
+      if (!selectedVersion || !selectedBook) return;
       
-      // Set default chapter if current selection doesn't exist
-      if (!chapterList.includes(selectedChapter)) {
-        setSelectedChapter(chapterList[0] || '1');
+      try {
+        const chaptersResponse = await fetch(`/api/bible/${selectedVersion}/${encodeURIComponent(selectedBook)}/chapters`);
+        if (!chaptersResponse.ok) {
+          throw new Error(`Failed to load chapters for ${selectedBook}`);
+        }
+        
+        const chapterList: string[] = await chaptersResponse.json();
+        setChapters(chapterList);
+      } catch (error) {
+        console.error(`Error loading chapters for ${selectedBook}:`, error);
+        setChapters([]);
       }
+    };
+
+    loadChapters();
+  }, [selectedVersion, selectedBook]);
+
+  // Validate and set default chapter when chapters list changes
+  useEffect(() => {
+    if (chapters.length > 0 && !chapters.includes(selectedChapter)) {
+      setSelectedChapter(chapters[0] || '1');
     }
-  }, [bibleData, selectedBook, selectedChapter]);
+  }, [chapters, selectedChapter]);
+
+  // Load specific chapter data when chapter changes - use ref to prevent infinite loops
+  const loadingRef = useRef<string | null>(null);
+  
+  useEffect(() => {
+    const loadChapterData = async () => {
+      if (!selectedVersion || !selectedBook || !selectedChapter) return;
+      
+      const chapterKey = `${selectedVersion}-${selectedBook}-${selectedChapter}`;
+      
+      // Prevent duplicate requests
+      if (loadingRef.current === chapterKey) return;
+      
+      // Check if chapter is already loaded
+      if (bibleData?.[selectedBook]?.[selectedChapter]) {
+        return;
+      }
+      
+      loadingRef.current = chapterKey;
+      
+      try {
+        const chapterResponse = await fetch(`/api/bible/${selectedVersion}/${encodeURIComponent(selectedBook)}/${selectedChapter}`);
+        if (!chapterResponse.ok) {
+          throw new Error(`Failed to load chapter ${selectedChapter} of ${selectedBook}`);
+        }
+        
+        const chapterVerses = await chapterResponse.json();
+        
+        // Update the Bible data structure to include this chapter
+        setBibleData(prevData => ({
+          ...prevData,
+          [selectedBook]: {
+            ...prevData?.[selectedBook],
+            [selectedChapter]: chapterVerses
+          }
+        }));
+        
+      } catch (error) {
+        console.error(`Error loading chapter ${selectedChapter} of ${selectedBook}:`, error);
+      } finally {
+        loadingRef.current = null;
+      }
+    };
+
+    loadChapterData();
+  }, [selectedVersion, selectedBook, selectedChapter, bibleData]);
+
+  // Preload adjacent chapters - use separate tracking to prevent infinite loops
+  const preloadingRef = useRef<Set<string>>(new Set());
+  
+  useEffect(() => {
+    const preloadAdjacentChapters = async () => {
+      if (!selectedVersion || !selectedBook || !chapters.length || !selectedChapter) return;
+
+      const currentChapterNum = parseInt(selectedChapter);
+      const prevChapter = (currentChapterNum - 1).toString();
+      const nextChapter = (currentChapterNum + 1).toString();
+
+      // Preload previous chapter if it exists and not already loaded
+      if (chapters.includes(prevChapter) && !bibleData?.[selectedBook]?.[prevChapter]) {
+        const prevKey = `${selectedVersion}-${selectedBook}-${prevChapter}`;
+        if (!preloadingRef.current.has(prevKey)) {
+          preloadingRef.current.add(prevKey);
+          
+          try {
+            const prevResponse = await fetch(`/api/bible/${selectedVersion}/${encodeURIComponent(selectedBook)}/${prevChapter}`);
+            if (prevResponse.ok) {
+              const prevVerses = await prevResponse.json();
+              setBibleData(prevData => ({
+                ...prevData,
+                [selectedBook]: {
+                  ...prevData?.[selectedBook],
+                  [prevChapter]: prevVerses
+                }
+              }));
+            }
+          } catch {
+            // Silently fail for preloading
+            console.log(`Preload failed for ${selectedBook} ${prevChapter}`);
+          } finally {
+            preloadingRef.current.delete(prevKey);
+          }
+        }
+      }
+
+      // Preload next chapter if it exists and not already loaded
+      if (chapters.includes(nextChapter) && !bibleData?.[selectedBook]?.[nextChapter]) {
+        const nextKey = `${selectedVersion}-${selectedBook}-${nextChapter}`;
+        if (!preloadingRef.current.has(nextKey)) {
+          preloadingRef.current.add(nextKey);
+          
+          try {
+            const nextResponse = await fetch(`/api/bible/${selectedVersion}/${encodeURIComponent(selectedBook)}/${nextChapter}`);
+            if (nextResponse.ok) {
+              const nextVerses = await nextResponse.json();
+              setBibleData(prevData => ({
+                ...prevData,
+                [selectedBook]: {
+                  ...prevData?.[selectedBook],
+                  [nextChapter]: nextVerses
+                }
+              }));
+            }
+          } catch {
+            // Silently fail for preloading
+            console.log(`Preload failed for ${selectedBook} ${nextChapter}`);
+          } finally {
+            preloadingRef.current.delete(nextKey);
+          }
+        }
+      }
+    };
+
+    // Extract the complex expression to a variable
+    const isChapterLoaded = Boolean(bibleData?.[selectedBook]?.[selectedChapter]);
+    
+    // Only preload after the main chapter is loaded
+    if (isChapterLoaded) {
+      preloadAdjacentChapters();
+    }
+  }, [selectedVersion, selectedBook, selectedChapter, chapters, bibleData]);
+
+  // Update chapters when book changes - removed since now handled above
+  // Update chapters when book changes - removed since now handled above
 
   // Handle verse highlighting and scrolling after data loads
   useEffect(() => {
@@ -485,11 +652,17 @@ function ReadBibleContent() {
   }, [selectedChapter, chapters]);
 
   const getCurrentChapterText = () => {
-    if (!bibleData || !selectedBook || !selectedChapter || !bibleData[selectedBook]?.[selectedChapter]) {
+    if (!selectedBook || !selectedChapter) {
       return null;
     }
     
-    return bibleData[selectedBook][selectedChapter];
+    // Check if we have the chapter data loaded
+    if (bibleData?.[selectedBook]?.[selectedChapter]) {
+      return bibleData[selectedBook][selectedChapter];
+    }
+    
+    // Return null if not loaded yet (will show loading state)
+    return null;
   };
 
   // Callback function to update verse text without page refresh
@@ -521,59 +694,38 @@ function ReadBibleContent() {
       setShowSearchResults(false);
       return;
     }
-    
-    if (!bibleData) return;
 
     setIsSearching(true);
     setSearchResults([]);
 
     try {
-      const results: Array<{book: string, chapter: string, verse: string, text: string}> = [];
-      const searchTerm = query.toLowerCase();
-
-      if (searchScope === 'current') {
-        // Search in the current book only
-        const currentBookData = bibleData[selectedBook];
-        if (currentBookData) {
-          Object.entries(currentBookData).forEach(([chapter, verses]) => {
-            Object.entries(verses as {[key: string]: string}).forEach(([verse, text]) => {
-              if (text.toLowerCase().includes(searchTerm)) {
-                results.push({
-                  book: selectedBook,
-                  chapter,
-                  verse,
-                  text
-                });
-              }
-            });
-          });
-        }
-      } else {
-        // Search across all books
-        Object.entries(bibleData).forEach(([book, bookData]) => {
-          Object.entries(bookData).forEach(([chapter, verses]) => {
-            Object.entries(verses as {[key: string]: string}).forEach(([verse, text]) => {
-              if (text.toLowerCase().includes(searchTerm)) {
-                results.push({
-                  book,
-                  chapter,
-                  verse,
-                  text
-                });
-              }
-            });
-          });
-        });
-      }
+      // Use the database-powered search service
+      const bibleSearchService = BibleSearchService.getInstance();
+      
+      // Determine the book scope for search
+      const searchBook = searchScope === 'current' ? selectedBook : undefined;
+      
+      // Perform the search using the database
+      const response = await bibleSearchService.searchBible(query, selectedVersion, searchBook);
+      
+      // Convert the response format to match the expected interface
+      const results = response.results.map(result => ({
+        book: result.book,
+        chapter: result.chapter,
+        verse: result.verse,
+        text: result.text
+      }));
 
       setSearchResults(results);
       setShowSearchResults(true);
     } catch (error) {
       console.error('Search error:', error);
+      setSearchResults([]);
+      setShowSearchResults(true);
     } finally {
       setIsSearching(false);
     }
-  }, [bibleData, searchScope, selectedBook]);
+  }, [selectedVersion, selectedBook, searchScope]);
 
   // Debounced search trigger for real-time search
   const triggerDebouncedSearch = useCallback((query: string) => {
@@ -719,7 +871,8 @@ function ReadBibleContent() {
         ) : (
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
-              <p className="text-gray-600 dark:text-gray-400">Chapter not found</p>
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600 mx-auto mb-2"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading {getBookDisplayName(selectedBook)} {selectedChapter}...</p>
             </div>
           </div>
         )}

@@ -103,3 +103,39 @@ model Bookmark {
 
   @@map("bookmarks")
 }
+
+// Bible Version model for managing different Bible translations
+model BibleVersion {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique  // "ESV", "NIV", "KJV", etc.
+  name      String            // "English Standard Version"
+  language  String   @default("en")
+  publisher String?
+  year      Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  verses BibleVerse[]
+
+  @@map("bible_versions")
+}
+
+// Bible Verse model for storing all verses
+model BibleVerse {
+  id        BigInt      @id @default(autoincrement())
+  versionId Int
+  book      String
+  chapter   Int
+  verse     Int
+  text      String      @db.Text
+  createdAt DateTime    @default(now())
+
+  version BibleVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, book, chapter, verse])
+  @@index([book, chapter, verse])
+  @@index([versionId, book, chapter])
+  @@index([book])
+  @@map("bible_verses")
+}
